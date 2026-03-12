@@ -59,8 +59,15 @@ module.exports.register_coach_post = async (req, res) => {
 // Nutritionist Register
 module.exports.register_nutritionist_post = async (req, res) => {
   try {
-    const { first_name, last_name, username, email, password, phone, price } =
-      req.body;
+    const { 
+      first_name, 
+      last_name, 
+      username, 
+      email, 
+      password, 
+      phone, 
+      price
+      } = req.body;
     const password_hash = await bcrypt.hash(password, 10);
     const user = await User.create({
       first_name,
@@ -79,7 +86,32 @@ module.exports.register_nutritionist_post = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
+module.exports.register_admin_post = async (req, res) => {
+  try {
+    const { 
+      first_name,
+      last_name, 
+      username, 
+      email, 
+      password, 
+      phone 
+    } = req.body;
+    const password_hash = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      first_name,
+      last_name,
+      username,
+      email,
+      password_hash,
+      phone,
+      role: "admin",
+    });
+    await Admin.create({ user_id: user.user_id });
+    res.status(201).json({ message: "Admin registered successfully!", user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 module.exports.login_get = async (req, res) => {
   res.send("new signup");
 };
@@ -88,11 +120,11 @@ module.exports.login_post = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ where: { email } });
-    if (!user) return res.status(404).json({ message: "User not found!" });
+    if (!user) return res.status(404).json({ message: "Incorrect Email!" });
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch)
-      return res.status(401).json({ message: "Incorrect password!" });
+      return res.status(401).json({ message: "Incorrect Password!" });
 
     const token = jwt.sign(
       { user_id: user.user_id, role: user.role },
