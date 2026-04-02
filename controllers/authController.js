@@ -13,7 +13,7 @@ const checkDuplicate = async (email, username) => {
   return null;
 };
 
-const signJWToken = async (user) => {
+const signJWToken = (user) => {
   const token = jwt.sign(
     {
       user_id: user.user_id,
@@ -128,15 +128,8 @@ module.exports.register_coach_post = async (req, res) => {
 // Nutritionist Register
 module.exports.register_nutritionist_post = async (req, res) => {
   try {
-    const { 
-      first_name, 
-      last_name, 
-      username, 
-      email, 
-      password, 
-      phone, 
-      price
-      } = req.body;
+    const { first_name, last_name, username, email, password, phone, price } =
+      req.body;
     const password_hash = await bcrypt.hash(password, 10);
     const user = await User.create({
       first_name,
@@ -157,14 +150,8 @@ module.exports.register_nutritionist_post = async (req, res) => {
 };
 module.exports.register_admin_post = async (req, res) => {
   try {
-    const { 
-      first_name,
-      last_name, 
-      username, 
-      email, 
-      password, 
-      phone 
-    } = req.body;
+    const { first_name, last_name, username, email, password, phone } =
+      req.body;
     const password_hash = await bcrypt.hash(password, 10);
     const user = await User.create({
       first_name,
@@ -203,6 +190,7 @@ module.exports.login_post = async (req, res) => {
     // Update last_login timestamp
     await user.update({ last_login: new Date() });
 
+    // Create JWT token
     const token = signJWToken(user);
     res.status(200).json({
       message: "Login successful!",
@@ -259,4 +247,44 @@ module.exports.delete_all_data_post = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+};
+
+// U.C 1.3 Complete Client Initial Survey
+module.exports.submit_client_survey = async (req, res) => {
+  try {
+    // Step A: Who is making this request? (from JWT via middleware)
+    const user_id = req.user.user_id;
+
+    // Step B: What did they send?
+    const {
+      goal,
+      typeWorkout,
+      dietPreference,
+      currentActivity,
+      coachHelp,
+      nutritionistHelp,
+      workoutDay,
+    } = req.body;
+
+    // Step C: Find their client record
+    const client = await Client.findByPk(user_id);
+    if (!client) {
+      return res.status(404).json({ error: "Client not found" });
+    }
+
+    // Step D: Update the record with survey answers
+    await client.update({
+      goal,
+      type_workout: typeWorkout,
+      diet_preference: dietPreference,
+      current_activity: currentActivity,
+      coach_help: coachHelp,
+      nutritionist_help: nutritionistHelp,
+      workout_day: parseInt(workoutDay),
+      survey_completed: true,
+    });
+
+    // Step E: Send success response
+    res.status(200).json({ message: "Survey submitted successfully!" });
+  } catch (error) {}
 };

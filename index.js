@@ -6,6 +6,7 @@ const { User } = require("./models");
 const jwt = require("jsonwebtoken"); // JWT
 
 const authRoutes = require("./routes/authRoutes");
+const surveyRoutes = require("./routes/surveyRoutes");
 
 const app = express();
 // Middleware to parse JSON data for all incoming requests
@@ -16,7 +17,8 @@ sequelize
   .then(() => console.log("Database connected"))
   .catch((err) => console.error("DB error:", err));
 
-app.use(authRoutes); // Auth routes
+app.use("/auth", authRoutes); // Auth routes
+app.use("/api/survey", surveyRoutes); // Initial Survey routes
 
 app.listen(4000, () => {
   console.log("Server running on port 4000");
