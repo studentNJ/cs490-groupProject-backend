@@ -4,11 +4,20 @@ const sequelize = require("./config/database");
 const bcrypt = require("bcrypt");
 const { User } = require("./models");
 const jwt = require("jsonwebtoken"); // JWT
+require("dotenv").config();
 
 const authRoutes = require("./routes/authRoutes");
 const surveyRoutes = require("./routes/surveyRoutes");
+// CORS
+const cors = require("cors");
 
 const app = express();
+app.use(
+  cors({
+    origin: "http://localhost:3001", // tells the browser "allow requests from this frontend URL"
+    credentials: true, // allows tokens and cookies to be sent with requests.
+  })
+);
 // Middleware to parse JSON data for all incoming requests
 app.use(express.json());
 

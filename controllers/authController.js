@@ -1,6 +1,6 @@
-const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { User, Client, Coach, Nutritionist } = require("../models");
+const { signJWToken } = require("../utils/jwt");
 
 // ------ Helpers Functions -------
 const checkDuplicate = async (email, username) => {
@@ -11,19 +11,6 @@ const checkDuplicate = async (email, username) => {
   if (byUsername) return "Username is already taken!";
 
   return null;
-};
-
-const signJWToken = (user) => {
-  const token = jwt.sign(
-    {
-      user_id: user.user_id,
-      role: user.role,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: "1d" }
-  );
-
-  return token;
 };
 
 // --------------------------------------
@@ -287,4 +274,29 @@ module.exports.submit_client_survey = async (req, res) => {
     // Step E: Send success response
     res.status(200).json({ message: "Survey submitted successfully!" });
   } catch (error) {}
+};
+
+// For fetching logged-in User data
+module.exports.get_me = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.user_id, {
+      attributes: [
+        "user_id",
+        "first_name",
+        "last_name",
+        "email",
+        "username",
+        "profile_pic",
+        "role",
+      ],
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    res.status(200).json({ user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

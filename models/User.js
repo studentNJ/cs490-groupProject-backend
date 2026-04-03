@@ -8,6 +8,11 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
       },
+      google_id: {
+        type: DataTypes.STRING,
+        unique: true,
+        allowNull: true,
+      },
       first_name: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -41,10 +46,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       password_hash: {
         type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-          notEmpty: true,
-        },
+        allowNull: true,
       },
       phone: {
         type: DataTypes.STRING,
