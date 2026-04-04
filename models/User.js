@@ -18,7 +18,6 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         validate: {
           notEmpty: true,
-          isAlpha: true,
         },
       },
       last_name: {
@@ -26,7 +25,6 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         validate: {
           notEmpty: true,
-          isAlpha: true,
         },
       },
       username: {

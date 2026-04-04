@@ -285,6 +285,7 @@ module.exports.get_me = async (req, res) => {
         "first_name",
         "last_name",
         "email",
+        "phone",
         "username",
         "profile_pic",
         "role",
@@ -294,8 +295,15 @@ module.exports.get_me = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
+    let goal = null;
+    if (user.role === "client") {
+      const client = await Client.findByPk(req.user.user_id);
+      if (client) {
+        goal = client.goal;
+      }
+    }
 
-    res.status(200).json({ user });
+    res.status(200).json({ user: { ...user.toJSON(), goal } });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
