@@ -3,12 +3,9 @@ const { User, Client, Coach, Nutritionist } = require("../models");
 const { signJWToken } = require("../utils/jwt");
 
 // ------ Helpers Functions -------
-const checkDuplicate = async (email, username) => {
+const checkDuplicate = async (email) => {
   const byEmail = await User.findOne({ where: { email } });
   if (byEmail) return "Email is already in use!";
-
-  const byUsername = await User.findOne({ where: { username } });
-  if (byUsername) return "Username is already taken!";
 
   return null;
 };
@@ -18,19 +15,18 @@ const checkDuplicate = async (email, username) => {
 // UC 1.1 - Register Client
 module.exports.register_client_post = async (req, res) => {
   try {
-    const { first_name, last_name, username, email, password, phone } =
-      req.body;
+    const { first_name, last_name, email, password, phone } = req.body;
 
     // Check for duplicate email
-    const dupError = await checkDuplicate(email, username);
+    const dupError = await checkDuplicate(email);
     if (dupError) return res.status(409).json({ message: dupError });
 
     const password_hash = await bcrypt.hash(password, 10);
     const user = await User.create({
       first_name,
       last_name,
-      username,
       email,
+      username: email.split("@")[0] + "_" + Date.now(), // auto-generated
       password_hash,
       phone,
       role: "client",
@@ -62,7 +58,6 @@ module.exports.register_coach_post = async (req, res) => {
     const {
       first_name,
       last_name,
-      username,
       email,
       password,
       phone,
@@ -71,15 +66,15 @@ module.exports.register_coach_post = async (req, res) => {
     } = req.body;
 
     // Check if email or username is duplocate
-    const dupError = checkDuplicate(email, username);
+    const dupError = checkDuplicate(email);
     if (dupError) return res.status(409).json({ message: dupError });
     // Hash the password
     const password_hash = await bcrypt.hash(password, 10);
     const user = await User.create({
       first_name,
       last_name,
-      username,
       email,
+      username: email.split("@")[0] + "_" + Date.now(), // auto-generated
       password_hash,
       phone,
       role: "coach",
@@ -115,14 +110,13 @@ module.exports.register_coach_post = async (req, res) => {
 // Nutritionist Register
 module.exports.register_nutritionist_post = async (req, res) => {
   try {
-    const { first_name, last_name, username, email, password, phone, price } =
-      req.body;
+    const { first_name, last_name, email, password, phone, price } = req.body;
     const password_hash = await bcrypt.hash(password, 10);
     const user = await User.create({
       first_name,
       last_name,
-      username,
       email,
+      username: email.split("@")[0] + "_" + Date.now(),
       password_hash,
       phone,
       role: "nutritionist",

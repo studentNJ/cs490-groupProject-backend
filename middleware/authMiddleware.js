@@ -23,10 +23,13 @@ module.exports = (req, res, next) => {
 
   // Check the signature is valid and the token hasn't expired, if it passes, it returns the payload {user_id, role} -- gets attached to req.user
   try {
+    console.log("JWT_SECRET:", process.env.JWT_SECRET);
+    console.log("Token:", token.substring(0, 20) + "...");
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next(); // All good pass it to contoller
   } catch (error) {
+    console.log("JWT Error:", error.message);
     return res.status(401).json({ message: "Invalid or expired token." });
   }
 };
