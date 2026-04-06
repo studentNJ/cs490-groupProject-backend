@@ -66,7 +66,7 @@ module.exports.register_coach_post = async (req, res) => {
     } = req.body;
 
     // Check if email or username is duplocate
-    const dupError = checkDuplicate(email);
+    const dupError = await checkDuplicate(email);
     if (dupError) return res.status(409).json({ message: dupError });
     // Hash the password
     const password_hash = await bcrypt.hash(password, 10);

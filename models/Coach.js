@@ -16,6 +16,20 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DECIMAL(8, 2),
         allowNull: true,
       },
+      // Add these to match your new migration
+      bio: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      experience_years: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      is_verified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
     },
     {
       tableName: "coach",
