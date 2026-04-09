@@ -80,6 +80,7 @@ module.exports = (sequelize, DataTypes) => {
     User.hasOne(models.Client, { foreignKey: "user_id" });
     User.hasOne(models.Coach, { foreignKey: "user_id" });
     User.hasOne(models.Nutritionist, { foreignKey: "user_id" });
+    User.hasOne(models.Admin, { foreignKey: "user_id" });
     /*
     // things user creates
     User.hasMany(models.Workout, { foreignKey: "created_by_user_id" });

@@ -1,2 +1,4 @@
 .env
 node_modules/
+documentation/
+dev.sqlite3

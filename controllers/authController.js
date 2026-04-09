@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const { User, Client, Coach, Nutritionist } = require("../models");
+const { User, Client, Coach, Nutritionist, Admin } = require("../models");
 
 // ------ Helpers Functions -------
 const checkDuplicate = async (email, username) => {
@@ -24,6 +24,40 @@ const signJWToken = async (user) => {
   );
 
   return token;
+};
+
+const buildUserResponse = async (user) => {
+  const responseUser = {
+    user_id: user.user_id,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    email: user.email,
+    username: user.username,
+    role: user.role,
+    phone: user.phone,
+    profile_pic: user.profile_pic,
+    is_active: user.is_active,
+    last_login: user.last_login,
+  };
+
+  if (user.role === "coach") {
+    const coach = await Coach.findByPk(user.user_id);
+    if (coach) {
+      responseUser.specialization = coach.specialization;
+      responseUser.price = coach.price;
+      responseUser.is_approved = coach.is_approved;
+    }
+  }
+
+  if (user.role === "nutritionist") {
+    const nutritionist = await Nutritionist.findByPk(user.user_id);
+    if (nutritionist) {
+      responseUser.price = nutritionist.price;
+      responseUser.is_approved = nutritionist.is_approved;
+    }
+  }
+
+  return responseUser;
 };
 
 // --------------------------------------
@@ -51,7 +85,7 @@ module.exports.register_client_post = async (req, res) => {
 
     await Client.create({ user_id: user.user_id });
 
-    const token = signJWToken(user);
+    const token = await signJWToken(user);
 
     res.status(201).json({
       message: "Client registered successfully!",
@@ -84,7 +118,7 @@ module.exports.register_coach_post = async (req, res) => {
     } = req.body;
 
     // Check if email or username is duplocate
-    const dupError = checkDuplicate(email, username);
+    const dupError = await checkDuplicate(email, username);
     if (dupError) return res.status(409).json({ message: dupError });
     // Hash the password
     const password_hash = await bcrypt.hash(password, 10);
@@ -105,7 +139,7 @@ module.exports.register_coach_post = async (req, res) => {
     // Coaches can also user Client features (U.C 2.4 role switch)
     await Client.create({ user_id: user.user_id });
 
-    const token = signJWToken(user);
+    const token = await signJWToken(user);
 
     res.status(201).json({
       message: "Coach registered successfully!",
@@ -137,6 +171,10 @@ module.exports.register_nutritionist_post = async (req, res) => {
       phone, 
       price
       } = req.body;
+
+    const dupError = await checkDuplicate(email, username);
+    if (dupError) return res.status(409).json({ message: dupError });
+
     const password_hash = await bcrypt.hash(password, 10);
     const user = await User.create({
       first_name,
@@ -148,15 +186,29 @@ module.exports.register_nutritionist_post = async (req, res) => {
       role: "nutritionist",
     });
     await Nutritionist.create({ user_id: user.user_id, price });
+    const token = await signJWToken(user);
+
     res
       .status(201)
-      .json({ message: "Nutritionist registered successfully!", user });
+      .json({
+        message: "Nutritionist registered successfully!",
+        token,
+        user: await buildUserResponse(user),
+      });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 module.exports.register_admin_post = async (req, res) => {
   try {
+    if (!process.env.ADMIN_SECRET) {
+      return res.status(500).json({ message: "ADMIN_SECRET is not configured." });
+    }
+
+    if (req.headers["x-admin-secret"] !== process.env.ADMIN_SECRET) {
+      return res.status(403).json({ message: "Invalid admin registration secret." });
+    }
+
     const { 
       first_name,
       last_name, 
@@ -165,6 +217,10 @@ module.exports.register_admin_post = async (req, res) => {
       password, 
       phone 
     } = req.body;
+
+    const dupError = await checkDuplicate(email, username);
+    if (dupError) return res.status(409).json({ message: dupError });
+
     const password_hash = await bcrypt.hash(password, 10);
     const user = await User.create({
       first_name,
@@ -176,13 +232,38 @@ module.exports.register_admin_post = async (req, res) => {
       role: "admin",
     });
     await Admin.create({ user_id: user.user_id });
-    res.status(201).json({ message: "Admin registered successfully!", user });
+
+    const token = await signJWToken(user);
+
+    res.status(201).json({
+      message: "Admin registered successfully!",
+      token,
+      user: {
+        user_id: user.user_id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 module.exports.login_get = async (req, res) => {
   res.send("new signup");
+};
+
+module.exports.me_get = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.user_id);
+    if (!user) return res.status(404).json({ message: "User not found!" });
+
+    res.status(200).json({ user: await buildUserResponse(user) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 // UC 1.5 - Login
@@ -203,17 +284,11 @@ module.exports.login_post = async (req, res) => {
     // Update last_login timestamp
     await user.update({ last_login: new Date() });
 
-    const token = signJWToken(user);
+    const token = await signJWToken(user);
     res.status(200).json({
       message: "Login successful!",
       token,
-      user: {
-        user_id: user.user_id,
-        role: user.role,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-      },
+      user: await buildUserResponse(user),
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -233,10 +308,10 @@ module.exports.delete_account_post = async (req, res) => {
   // change the is_active state to false
   try {
     const { user_id } = req.user;
-    User.update({ is_active: false }, { where: { user_id } });
+    await User.update({ is_active: false }, { where: { user_id } });
     res.status(200).json({ message: "Account deactivated successfully." });
   } catch (error) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: error.message });
   }
 };
 

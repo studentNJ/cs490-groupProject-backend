@@ -11,9 +11,11 @@ router.post(
   "/register/nutritionist",
   authController.register_nutritionist_post
 );
+router.post("/register/admin", authController.register_admin_post);
 router.post("/login", authController.login_post);
 
 // -- Protected Routes --
+router.get("/me", auth, authController.me_get);
 router.post("/logout", auth, authController.logout_post);
 router.post("/delete-account", auth, authController.delete_account_post);
 router.post("/delete-all-data", auth, authController.delete_all_data_post);

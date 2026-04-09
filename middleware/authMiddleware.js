@@ -15,7 +15,7 @@ module.exports = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   // If token doesn't exist in HTPP request header, reject it
-  if (!authHeader || !authHeader.startswith("Bearer "))
+  if (!authHeader || !authHeader.startsWith("Bearer "))
     return res.status(401).json({ message: "No token provided!" });
 
   // Grab the token from HTTP req header
@@ -29,5 +29,4 @@ module.exports = (req, res, next) => {
   } catch (error) {
     return res.status(401).json({ message: "Invalid or expired token." });
   }
-  c;
 };

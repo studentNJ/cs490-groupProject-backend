@@ -6,7 +6,6 @@ module.exports = (sequelize, DataTypes) => {
       user_id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
-        autoIncrement: true,        
       },
       updated_at: {
         type: DataTypes.DATE,
@@ -44,10 +43,5 @@ module.exports = (sequelize, DataTypes) => {
     */
   };
 
-  const syncAdmin = Admin.sync().then(() => {
-    console.log("Admin table synced");
-  });
-
-
-  return syncAdmin;
+  return Admin;
 };

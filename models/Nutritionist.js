@@ -10,6 +10,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DECIMAL(8, 2),
         allowNull: true,
       },
+      is_approved: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
     },
     {
       tableName: "nutritionist",
