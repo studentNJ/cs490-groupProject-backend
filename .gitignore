@@ -1,2 +1,4 @@
 .env
 node_modules/
+postman/globals/workspace.globals.yaml
+.postman/resources.yaml
