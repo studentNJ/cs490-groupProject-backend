@@ -56,7 +56,7 @@ module.exports = (sequalize, DataTypes) => {
       },
     },
     {
-      tableName: "Client",
+      tableName: "client",
       underscored: true,
       timestamps: false,
     }
