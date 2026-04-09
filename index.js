@@ -9,6 +9,8 @@ require("dotenv").config();
 const authRoutes = require("./routes/authRoutes");
 const surveyRoutes = require("./routes/surveyRoutes");
 const profileRoutes = require("./routes/profileRoutes");
+const workoutRoutes = require("./routes/workoutRoutes");
+
 // CORS
 const cors = require("cors");
 
@@ -30,6 +32,7 @@ sequelize
 app.use("/auth", authRoutes); // Auth routes
 app.use("/api/survey", surveyRoutes); // Initial Survey routes
 app.use("/api/profile", profileRoutes); // Profile routes
+app.use("/api/workout", workoutRoutes); 
 
 app.listen(4000, () => {
   console.log("Server running on port 4000");
