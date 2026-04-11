@@ -5,10 +5,13 @@ const bcrypt = require("bcrypt");
 const { User } = require("./models");
 const jwt = require("jsonwebtoken"); // JWT
 require("dotenv").config();
+const { initSocket } = require("./socket");
 
 const authRoutes = require("./routes/authRoutes");
 const surveyRoutes = require("./routes/surveyRoutes");
 const profileRoutes = require("./routes/profileRoutes");
+const messageRoutes = require("./routes/messageRoutes");
+
 // CORS
 const cors = require("cors");
 
@@ -30,7 +33,10 @@ sequelize
 app.use("/auth", authRoutes); // Auth routes
 app.use("/api/survey", surveyRoutes); // Initial Survey routes
 app.use("/api/profile", profileRoutes); // Profile routes
+app.use("/message", messageRoutes); // Profile routes
 
-app.listen(4000, () => {
+const server = app.listen(4000, () => {
   console.log("Server running on port 4000");
 });
+
+initSocket(server);
