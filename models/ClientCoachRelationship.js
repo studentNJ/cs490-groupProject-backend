@@ -12,10 +12,19 @@ module.exports = (sequelize, DataTypes) => {
       status: {
         type: DataTypes.ENUM("active", "inactive", "pending"),
         allowNull: false,
-        defaultValue: "active",
+        defaultValue: "pending",
       },
       start_date: DataTypes.DATEONLY,
       end_date: DataTypes.DATEONLY,
+      requested_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      responded_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
     },
     {
       tableName: "client_coach_relationship",

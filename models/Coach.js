@@ -40,6 +40,10 @@ module.exports = (sequelize, DataTypes) => {
   // Associations
   Coach.associate = (models) => {
     Coach.belongsTo(models.User, { foreignKey: "user_id" }); // coach IS a user
+
+    Coach.hasMany(models.ClientCoachRelationship, {
+      foreignKey: "coach_user_id",
+    });
     /*
     Coach.hasMany(models.ClientCoachRelationship, {
       foreignKey: "coach_user_id",

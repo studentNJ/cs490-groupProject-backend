@@ -11,7 +11,8 @@ const authRoutes = require("./routes/authRoutes");
 const surveyRoutes = require("./routes/surveyRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const messageRoutes = require("./routes/messageRoutes");
-
+const coachRoutes = require("./routes/coachRoutes");
+const clientRoutes = require("./routes/clientRoutes");
 const workoutRoutes = require("./routes/workoutRoutes");
 
 // CORS
@@ -37,6 +38,8 @@ app.use("/api/survey", surveyRoutes); // Initial Survey routes
 app.use("/api/profile", profileRoutes); // Profile routes
 app.use("/message", messageRoutes); // Profile routes
 app.use("/api/workout", workoutRoutes);
+app.use("/api/coach", coachRoutes);
+app.use("/api/client", clientRoutes);
 
 const server = app.listen(4000, () => {
   console.log("Server running on port 4000");
