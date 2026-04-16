@@ -4,13 +4,16 @@ const router = express.Router();
 const workoutController = require("../controllers/workoutController");
 
 // Exercise Catalog || Displays all workouts without filter
-router.get("/create", auth, workoutController.browse_exercise);
+router.get("/custom", workoutController.browse_exercise);
 
 // Browse Workouts
-router.get("/", auth, workoutController.browse_workout);
+router.get("/premade", auth, workoutController.browse_workout);
 
 // Create a Workout
-router.post("/create", auth, workoutController.create_workout);
+router.post("/custom", auth, workoutController.create_workout);
+
+// Delete a Workout
+router.delete("/premade", auth, workoutController.delete_workout);
 
 
 module.exports = router;

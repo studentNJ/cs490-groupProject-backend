@@ -47,6 +47,16 @@ module.exports = (sequelize, DataTypes) => {
                     notEmpty: true,
                 },
             },
+
+            video_url: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+
+            image_url: {
+                type: DataTypes.STRING,
+                allowNull: false,
+            },
         },
         {
             tableName: "exercise",
@@ -56,9 +66,11 @@ module.exports = (sequelize, DataTypes) => {
     );
 
     Exercise.associate = (models) => {
-
+        
         Exercise.hasMany(models.workoutExercise, { foreignKey: "exercise_id" });
-    }
+
+        Exercise.belongsToMany(models.Workout, {through: "workout_exercise", foreignKey: "exercise_id" });
+    };
 
     return Exercise;
 };

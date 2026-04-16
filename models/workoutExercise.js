@@ -1,4 +1,5 @@
 const { DataTypes } = require("sequelize");
+const workout = require("./workout");
 
 module.exports = (sequelize, DataTypes) => {
     const workoutExercise = sequelize.define(
@@ -12,11 +13,13 @@ module.exports = (sequelize, DataTypes) => {
             },
             workout_id: {
                 type: DataTypes.INTEGER,
-                defaultValue: NULL,
+                allowNull: true,
+                defaultValue: null,
             },
             exercise_id: {
                 type: DataTypes.INTEGER,
-                defaultValue: NULL,
+                allowNull: true,
+                defaultValue: null,
             },
             sets: {
                 type: DataTypes.INTEGER,
@@ -28,7 +31,8 @@ module.exports = (sequelize, DataTypes) => {
             },
             rest_seconds: {
                 type: DataTypes.INTEGER,
-                defaultValue: NULL,
+                allowNull: true,
+                defaultValue: null,
             },
             order_index: {
                 type: DataTypes.INTEGER,
@@ -50,5 +54,7 @@ module.exports = (sequelize, DataTypes) => {
        
         workoutExercise.belongsTo(models.Workout, { foreignKey: "workout_id" });
         workoutExercise.belongsTo(models.Exercise, { foreignKey: "exercise_id" });
-    }
-}
+    };
+
+    return workoutExercise;
+};

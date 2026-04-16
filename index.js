@@ -17,7 +17,7 @@ const cors = require("cors");
 const app = express();
 app.use(
   cors({
-    origin: "http://localhost:3001", // tells the browser "allow requests from this frontend URL"
+    origin: ["http://localhost:3001", "http://localhost:3000"], // tells the browser "allow requests from this frontend URL"
     credentials: true, // allows tokens and cookies to be sent with requests.
   })
 );
@@ -32,7 +32,7 @@ sequelize
 app.use("/auth", authRoutes); // Auth routes
 app.use("/api/survey", surveyRoutes); // Initial Survey routes
 app.use("/api/profile", profileRoutes); // Profile routes
-app.use("/api/workout", workoutRoutes); 
+app.use("/api/workout", workoutRoutes);
 
 app.listen(4000, () => {
   console.log("Server running on port 4000");
