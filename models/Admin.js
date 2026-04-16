@@ -16,32 +16,38 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
         allowNull: true,
       },
+      created_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       tableName: "admin",
       underscored: true,
-    }
-  );
+      timestamps: false,
+    },
+  )
 
   // Associations
   Admin.associate = (models) => {
     // One to One Relationship
-    Admin.belongsTo(models.User, { foreignKey: "user_id" });
+    Admin.belongsTo(models.User, { foreignKey: "user_id" })
     /*
     // things user creates
-    User.hasMany(models.Workout, { foreignKey: "created_by_user_id" });
-    User.hasMany(models.Meal, { foreignKey: "created_by_user_id" });
-    User.hasMany(models.MealPlan, { foreignKey: "created_by_user_id" });
-    User.hasMany(models.WorkoutPlan, { foreignKey: "created_by_user_id" });
+    User.hasMany(models.Workout, { foreignKey: "created_by_user_id" })
+    User.hasMany(models.Meal, { foreignKey: "created_by_user_id" })
+    User.hasMany(models.MealPlan, { foreignKey: "created_by_user_id" })
+    User.hasMany(models.WorkoutPlan, { foreignKey: "created_by_user_id" })
 
     // messaging
-    User.hasMany(models.Message, { as: "sentMessages", foreignKey: "from_id" });
+    User.hasMany(models.Message, { as: "sentMessages", foreignKey: "from_id" })
     User.hasMany(models.Message, {
       as: "receivedMessages",
       foreignKey: "to_id",
-    });
+    })
     */
-  };
+  }
 
-  return Admin;
-};
+  return Admin
+}

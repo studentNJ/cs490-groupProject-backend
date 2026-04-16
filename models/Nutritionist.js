@@ -20,26 +20,26 @@ module.exports = (sequelize, DataTypes) => {
       tableName: "nutritionist",
       underscored: true,
       timestamps: false,
-    }
-  );
+    },
+  )
 
   Nutritionist.associate = (models) => {
     // One to one
-    Nutritionist.belongsTo(models.User, { foreignKey: "user_id" });
+    Nutritionist.belongsTo(models.User, { foreignKey: "user_id" })
     /*
     // One to many
     Nutritionist.hasMany(models.ClientNutritionistRelationship, {
       foreignKey: "nutritionist_user_id",
-    });
+    })
     Nutritionist.hasMany(models.NutritionistReview, {
       foreignKey: "nutritionist_user_id",
-    });
+    })
     Nutritionist.hasMany(models.NutritionPlan, {
       foreignKey: "nutritionist_id",
-    });
-    Nutritionist.hasMany(models.Payment, { foreignKey: "nutritionist_id" });
+    })
+    Nutritionist.hasMany(models.Payment, { foreignKey: "nutritionist_id" })
     */
-  };
+  }
 
-  return Nutritionist;
-};
+  return Nutritionist
+}

@@ -1,4 +1,4 @@
-const { underscoredIf } = require("sequelize/lib/utils");
+const { underscoredIf } = require("sequelize/lib/utils")
 
 module.exports = (sequalize, DataTypes) => {
   const Client = sequalize.define(
@@ -25,30 +25,30 @@ module.exports = (sequalize, DataTypes) => {
       tableName: "Client",
       underscored: true,
       timestamps: false,
-    }
-  );
+    },
+  )
   Client.associate = (models) => {
     // One to one
-    Client.belongsTo(models.User, { foreignKey: "user_id" });
+    Client.belongsTo(models.User, { foreignKey: "user_id" })
 
     // One to many
     /*
     Client.hasMany(models.ClientCoachRelationship, {
       foreignKey: "client_user_id",
-    });
+    })
     Client.hasMany(models.ClientNutritionistRelationship, {
       foreignKey: "client_user_id",
-    });
-    Client.hasMany(models.CoachReview, { foreignKey: "client_user_id" });
-    Client.hasMany(models.NutritionistReview, { foreignKey: "client_user_id" });
-    Client.hasMany(models.MealPlan, { foreignKey: "client_id" });
-    Client.hasMany(models.WorkoutPlan, { foreignKey: "client_id" });
-    Client.hasMany(models.WorkoutLog, { foreignKey: "client_id" });
-    Client.hasMany(models.Payment, { foreignKey: "client_id" });
-    Client.hasMany(models.Subscription, { foreignKey: "client_id" });
-    Client.hasMany(models.Session, { foreignKey: "client_id" });
+    })
+    Client.hasMany(models.CoachReview, { foreignKey: "client_user_id" })
+    Client.hasMany(models.NutritionistReview, { foreignKey: "client_user_id" })
+    Client.hasMany(models.MealPlan, { foreignKey: "client_id" })
+    Client.hasMany(models.WorkoutPlan, { foreignKey: "client_id" })
+    Client.hasMany(models.WorkoutLog, { foreignKey: "client_id" })
+    Client.hasMany(models.Payment, { foreignKey: "client_id" })
+    Client.hasMany(models.Subscription, { foreignKey: "client_id" })
+    Client.hasMany(models.Session, { foreignKey: "client_id" })
     */
-  };
+  }
 
-  return Client;
-};
+  return Client
+}

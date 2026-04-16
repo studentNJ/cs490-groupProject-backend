@@ -1,4 +1,4 @@
-"use strict";
+"use strict"
 
 module.exports = {
   async up(queryInterface, Sequelize) {
@@ -57,7 +57,7 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: false,
       },
-    });
+    })
 
     await queryInterface.createTable("Client", {
       user_id: {
@@ -82,7 +82,7 @@ module.exports = {
         type: Sequelize.DECIMAL(5, 2),
         allowNull: true,
       },
-    });
+    })
 
     await queryInterface.createTable("coach", {
       user_id: {
@@ -103,7 +103,7 @@ module.exports = {
         type: Sequelize.DECIMAL(8, 2),
         allowNull: true,
       },
-    });
+    })
 
     await queryInterface.createTable("nutritionist", {
       user_id: {
@@ -120,7 +120,7 @@ module.exports = {
         type: Sequelize.DECIMAL(8, 2),
         allowNull: true,
       },
-    });
+    })
 
     await queryInterface.createTable("admin", {
       user_id: {
@@ -145,14 +145,14 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: false,
       },
-    });
+    })
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable("admin");
-    await queryInterface.dropTable("nutritionist");
-    await queryInterface.dropTable("coach");
-    await queryInterface.dropTable("Client");
-    await queryInterface.dropTable("users");
+    await queryInterface.dropTable("admin")
+    await queryInterface.dropTable("nutritionist")
+    await queryInterface.dropTable("coach")
+    await queryInterface.dropTable("Client")
+    await queryInterface.dropTable("users")
   },
-};
+}
