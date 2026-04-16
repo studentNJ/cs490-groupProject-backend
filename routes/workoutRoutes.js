@@ -13,7 +13,7 @@ router.get("/premade", auth, workoutController.browse_workout);
 router.post("/custom", auth, workoutController.create_workout);
 
 // Delete a Workout
-router.delete("/premade", auth, workoutController.delete_workout);
+router.delete("/premade/:id", auth, workoutController.delete_workout);
 
 
 module.exports = router;
