@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
     Workout.associate = (models) => {
         Workout.belongsTo(models.User, { foreignKey: "created_by_user_id"});
 
-        Workout.hasMany(models.workoutExercise, { foreignKey: "workout_id" });
+        Workout.belongsToMany(models.Exercise, {through: "workout_exercise", foreignKey: "workout_id"});
     };
     
     return Workout;
