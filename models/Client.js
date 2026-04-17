@@ -66,6 +66,9 @@ module.exports = (sequalize, DataTypes) => {
     Client.belongsTo(models.User, { foreignKey: "user_id" });
 
     // One to many
+    Client.hasMany(models.ClientCoachRelationship, {
+      foreignKey: "client_user_id",
+    });
     /*
     Client.hasMany(models.ClientCoachRelationship, {
       foreignKey: "client_user_id",

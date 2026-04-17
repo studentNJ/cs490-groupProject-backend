@@ -1,0 +1,245 @@
+const { User, Coach } = require("../models");
+const { Op, where } = require("sequelize");
+const ClientCoachRelationship = require("../models/ClientCoachRelationship");
+
+// /api/coaches - public browse for clients
+module.exports.browse_coaches = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const offset = (page - 1) * limit;
+
+    const coaches = await User.findAndCountAll({
+      where: { role: "coach", is_active: true },
+      attributes: ["user_id", "first_name", "last_name", "profile pic"],
+      include: [
+        {
+          model: Coach,
+          required: true,
+          attributes: [
+            "bio",
+            "specialization",
+            "price",
+            "experience_years",
+            "is_verified",
+          ],
+        },
+      ],
+      limit,
+      offset,
+      order: [["user_id", "ASC"]],
+    });
+
+    return res.json({
+      totalItems: coaches.count,
+      totalPages: Math.ceil(coaches.count / limit),
+      currentPage: page,
+      data: coaches.rows,
+    });
+  } catch (error) {
+    console.error("brose_coaches error: ", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// api/coaches/:coachUserId - coach detail, this shows the detail model when a client clicks a coach card.
+module.exports.get_coach = async (req, res) => {
+  try {
+    const coachUserId = parseInt(req.params.coachUserId);
+
+    if (isNaN(coachUserId)) {
+      return res.status(400).json({ error: "Invalid coach id!" });
+    }
+
+    const coach = await User.findOne({
+      where: { user_id: coachUserId, role: "coach", is_active: true },
+      attributes: ["user_id", "first_name", "last_name", "profile_pic"],
+      include: [
+        {
+          model: Coach,
+          required: true,
+          attributes: [
+            "bio",
+            "specialization",
+            "price",
+            "experience_years",
+            "is_verified",
+          ],
+        },
+      ],
+    });
+    if (!coach) {
+      return res.status(404).json({ error: "Coach not found" });
+    }
+
+    return res.json(coach);
+  } catch (error) {
+    console.error("get_coach_error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// api/coaches/:coachUserId/request - client request a coach
+module.exports.request_coach = async (req, res) => {
+  try {
+    const coachUserId = parseInt(req.params.coachUserId);
+    const clientUserId = req.user.user_id;
+
+    if (isNaN(coachUserId)) {
+      return res.status(400).json({ error: "Invalid coach id" });
+    }
+
+    // Rule 2: caller must be a client
+    if (req.user.role !== "client") {
+      return res
+        .status(403)
+        .json({ error: "Only clients can request coaches" });
+    }
+
+    // Rule 3: coach must exist + be valid
+    const coach = await User.findOne({
+      where: {
+        user_id: coachUserId,
+        role: "coach",
+        is_active: true,
+      },
+      include: [{ model: Coach, required: true }],
+    });
+
+    if (!coach) {
+      return res.status(404).json({ error: "Coach not found" });
+    }
+    // Rule 4: client can't already have a pending OR active relationship
+    const existing = await ClientCoachRelationship.findOne({
+      where: {
+        client_user_id: clientUserId,
+        status: { [Op.in]: ["pending", "active"] },
+      },
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        error:
+          existing.status === "pending"
+            ? "You already have a pending request. Cancel it before requesting another coach."
+            : "You alrady have an active coach. Unhire them first.",
+        current_coach_user_id: existing.coach_user_id,
+        current_status: existing.status,
+      });
+    }
+
+    // Rule 5: create the pending request
+    const relationship = await ClientCoachRelationship.create({
+      client_user_id: clientUserId,
+      coach_user_id: coachUserId,
+      status: "pending",
+    });
+
+    return res.status(201).json({
+      message: "Request sent. Awaiting coach approval.",
+      relationship: {
+        id: relationship.client_coach_relationship_id,
+        coach_user_id: relationship.coach_user_id,
+        status: relationship.status,
+        requested_at: relationship.requested_at,
+      },
+    });
+  } catch (error) {
+    console.error("request_coach error: ", err);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports.cancel_request = async (req, res) => {
+  try {
+    const clientUserId = req.user.user_id;
+    if (req.user.role !== "client") {
+      return res
+        .status(403)
+        .json({ error: "Only clients can cancel requests." });
+    }
+
+    const pending = await ClientCoachRelationship.findOne({
+      where: {
+        client_user_id: clientUserId,
+        status: "pending",
+      },
+    });
+
+    if (!pending) {
+      return res.status(404).json({ error: "No pending request to cancel!" });
+    }
+
+    await pending.destroy();
+
+    return res.status(204).send();
+  } catch (error) {
+    console.error("cancel_request error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports.get_my_coach = async (req, res) => {
+  try {
+    const clientUserId = req.user.user_id;
+
+    if (req.user.role !== "client") {
+      return res.status(403).json({ error: "Clients only!" });
+    }
+
+    const relationship = await ClientCoachRelationship.findOne({
+      where: {
+        client_user_id: clientUserId,
+        status: { [Op.in]: ["pending", "active"] },
+      },
+      include: [
+        {
+          model: User,
+          as: "coach",
+          attributes: ["user_id", "first_name", "last_name", "profile_pic"],
+          include: [
+            {
+              model: Coach,
+              required: true,
+              attributes: [
+                "bio",
+                "specialization",
+                "price",
+                "experience_years",
+                "is_verified",
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!relationship) {
+      return res.json({ state: "none", coach: null });
+    }
+
+    const coachUser = relationship.coach;
+    const coachProfile = coachUser.Coach;
+
+    return res.json({
+      state: relationship.status,
+      relationship_id: relationship.client_coach_relationship_id,
+      requested_at: relationship.requested_at,
+      responded_at: relationship.responded_at,
+      coach: {
+        user_id: coachUser.user_id,
+        first_name: coachUser.first_name,
+        last_name: coachUser.last_name,
+        profile_pic: coachUser.profile_pic,
+        bio: coachProfile.bio,
+        specialization: coachProfile.specialization,
+        price: coachProfile.price,
+        experience_years: coachProfile.experience_years,
+        is_verified: coachProfile.is_verified,
+      },
+    });
+  } catch (error) {
+    console.error("get_my_coach error", error);
+    res.status(500).json({ error: error.message });
+  }
+};

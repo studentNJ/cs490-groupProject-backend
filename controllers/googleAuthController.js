@@ -81,6 +81,7 @@ module.exports.google_callback = async (req, res) => {
         google_id: userInfo.id,
         profile_pic: userInfo.picture,
         password_hash: null,
+        role: "client",
       });
 
       await Client.create({ user_id: user.user_id });
