@@ -11,7 +11,7 @@ module.exports.browse_coaches = async (req, res) => {
 
     const coaches = await User.findAndCountAll({
       where: { role: "coach", is_active: true },
-      attributes: ["user_id", "first_name", "last_name", "profile pic"],
+      attributes: ["user_id", "first_name", "last_name", "profile_pic"],
       include: [
         {
           model: Coach,

@@ -38,7 +38,7 @@ app.use("/api/survey", surveyRoutes); // Initial Survey routes
 app.use("/api/profile", profileRoutes); // Profile routes
 app.use("/message", messageRoutes); // Profile routes
 app.use("/api/workout", workoutRoutes);
-app.use("/api/coach", coachRoutes);
+app.use("/api/coaches", coachRoutes);
 app.use("/api/client", clientRoutes);
 
 const server = app.listen(4000, () => {
