@@ -14,6 +14,7 @@ const messageRoutes = require("./routes/messageRoutes");
 const coachRoutes = require("./routes/coachRoutes");
 const clientRoutes = require("./routes/clientRoutes");
 const workoutRoutes = require("./routes/workoutRoutes");
+const coachDasboardRoutes = require("./routes/coachDashboardRoutes");
 
 // CORS
 const cors = require("cors");
@@ -39,6 +40,7 @@ app.use("/api/profile", profileRoutes); // Profile routes
 app.use("/message", messageRoutes); // Profile routes
 app.use("/api/workout", workoutRoutes);
 app.use("/api/coaches", coachRoutes);
+app.use("/api/coach", coachDasboardRoutes);
 app.use("/api/client", clientRoutes);
 
 const server = app.listen(4000, () => {

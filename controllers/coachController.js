@@ -243,3 +243,78 @@ module.exports.get_my_coach = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// /api/coach/requests - return the list of clients who've requested this coach and are waiting for approval
+module.exports.get_pending_requests = async (req, res) => {
+  try {
+    const coachUserId = req.user.user_id;
+
+    if (req.user.role !== "coach") {
+      return res.status(403).json({ error: "Coaches only" });
+    }
+
+    const requests = await ClientCoachRelationship.findAll({
+      where: {
+        coach_user_id: coachUserId,
+        status: "pending",
+      },
+      include: [
+        {
+          model: User,
+          as: "client",
+          attributes: ["user_id", "first_name", "last_name", "profile_pic"],
+          include: [
+            {
+              model: Client,
+              attributes: [
+                "goal",
+                "type_workoute",
+                "diet_preference",
+                "current_activity",
+                "coach_help",
+                "workout_day",
+                "height",
+                "weight",
+                "goal_weight",
+              ],
+            },
+          ],
+        },
+      ],
+      order: [["requested_at", "ASC"]], // oldest first
+    });
+
+    const data = requests.map((r) => {
+      const clientUser = r.client;
+      const clientProfile = clientUser?.Client;
+
+      return {
+        relationship_id: r.client_coach_relationship_id,
+        requested_at: r.requested_at,
+        client: {
+          user_id: clientUser.user_id,
+          first_name: clientUser.first_name,
+          last_name: clientUser.last_name,
+          profile_pic: clientUser.profile_pic,
+          // survey data — might all be null if client skipped survey
+          goal: clientProfile?.goal || null,
+          type_workout: clientProfile?.type_workout || null,
+          diet_preference: clientProfile?.diet_preference || null,
+          current_activity: clientProfile?.current_activity || null,
+          coach_help: clientProfile?.coach_help || null,
+          workout_day: clientProfile?.workout_day || null,
+          height: clientProfile?.height || null,
+          weight: clientProfile?.weight || null,
+          goal_weight: clientProfile?.goal_weight || null,
+        },
+      };
+    });
+    return res.json({
+      totalItems: data.length,
+      data,
+    });
+  } catch (error) {
+    console.error("get_pending_requests error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
