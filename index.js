@@ -1,12 +1,13 @@
-require("dotenv").config()
-const cors = require("cors")
-const express = require("express")
-const sequelize = require("./config/database")
+require("dotenv").config();
+const express = require("express");
+const sequelize = require("./config/database");
+const bcrypt = require("bcrypt");
+const { User } = require("./models");
+const jwt = require("jsonwebtoken"); // JWT
 
-const authRoutes = require("./routes/authRoutes")
-const adminRoutes = require("./routes/adminRoutes")
+const authRoutes = require("./routes/authRoutes");
 
-const app = express()
+const app = express();
 // Middleware to parse JSON data for all incoming requests
 app.use(
   cors({
@@ -21,9 +22,8 @@ sequelize
   .then(() => console.log("Database connected"))
   .catch((err) => console.error("DB error:", err))
 
-app.use("/auth", authRoutes)
-app.use("/admin", adminRoutes)
+app.use(authRoutes); // Auth routes
 
 app.listen(4000, () => {
-  console.log("Server running on port 4000")
-})
+  console.log("Server running on port 4000");
+});

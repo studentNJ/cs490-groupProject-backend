@@ -20,9 +20,43 @@ module.exports = (sequalize, DataTypes) => {
         type: DataTypes.DECIMAL(5, 2),
         allowNull: true,
       },
+      // Survey Fields
+      // New survey fields
+      goal: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      type_workout: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      diet_preference: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      current_activity: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      coach_help: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      nutritionist_help: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      workout_day: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      survey_completed: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
     },
     {
-      tableName: "Client",
+      tableName: "client",
       underscored: true,
       timestamps: false,
     },
@@ -32,6 +66,9 @@ module.exports = (sequalize, DataTypes) => {
     Client.belongsTo(models.User, { foreignKey: "user_id" })
 
     // One to many
+    Client.hasMany(models.ClientCoachRelationship, {
+      foreignKey: "client_user_id",
+    });
     /*
     Client.hasMany(models.ClientCoachRelationship, {
       foreignKey: "client_user_id",

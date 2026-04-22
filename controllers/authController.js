@@ -1,17 +1,17 @@
-const jwt = require("jsonwebtoken")
-const bcrypt = require("bcrypt")
-const { User, Client, Coach, Nutritionist, Admin } = require("../models")
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const { User, Client, Coach, Nutritionist } = require("../models");
 
 // ------ Helpers Functions -------
 const checkDuplicate = async (email, username) => {
-  const byEmail = await User.findOne({ where: { email } })
-  if (byEmail) return "Email is already in use!"
+  const byEmail = await User.findOne({ where: { email } });
+  if (byEmail) return "Email is already in use!";
 
-  const byUsername = await User.findOne({ where: { username } })
-  if (byUsername) return "Username is already taken!"
+  const byUsername = await User.findOne({ where: { username } });
+  if (byUsername) return "Username is already taken!";
 
-  return null
-}
+  return null;
+};
 
 const signJWToken = async (user) => {
   const token = jwt.sign(
@@ -20,63 +20,30 @@ const signJWToken = async (user) => {
       role: user.role,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "1d" },
-  )
+    { expiresIn: "1d" }
+  );
 
-  return token
-}
-
-const buildUserResponse = async (user) => {
-  const responseUser = {
-    user_id: user.user_id,
-    first_name: user.first_name,
-    last_name: user.last_name,
-    email: user.email,
-    username: user.username,
-    role: user.role,
-    phone: user.phone,
-    profile_pic: user.profile_pic,
-    is_active: user.is_active,
-    last_login: user.last_login,
-  }
-
-  if (user.role === "coach") {
-    const coach = await Coach.findByPk(user.user_id)
-    if (coach) {
-      responseUser.specialization = coach.specialization
-      responseUser.price = coach.price
-      responseUser.is_approved = coach.is_approved
-    }
-  }
-
-  if (user.role === "nutritionist") {
-    const nutritionist = await Nutritionist.findByPk(user.user_id)
-    if (nutritionist) {
-      responseUser.price = nutritionist.price
-      responseUser.is_approved = nutritionist.is_approved
-    }
-  }
-
-  return responseUser
-}
+  return token;
+};
 
 // --------------------------------------
 
 // UC 1.1 - Register Client
 module.exports.register_client_post = async (req, res) => {
   try {
-    const { first_name, last_name, username, email, password, phone } = req.body
+    const { first_name, last_name, username, email, password, phone } =
+      req.body;
 
     // Check for duplicate email
-    const dupError = await checkDuplicate(email, username)
-    if (dupError) return res.status(409).json({ message: dupError })
+    const dupError = await checkDuplicate(email, username);
+    if (dupError) return res.status(409).json({ message: dupError });
 
     const password_hash = await bcrypt.hash(password, 10)
     const user = await User.create({
       first_name,
       last_name,
-      username,
       email,
+      username: email.split("@")[0] + "_" + Date.now(), // auto-generated
       password_hash,
       phone,
       role: "client",
@@ -108,7 +75,6 @@ module.exports.register_coach_post = async (req, res) => {
     const {
       first_name,
       last_name,
-      username,
       email,
       password,
       phone,
@@ -117,15 +83,15 @@ module.exports.register_coach_post = async (req, res) => {
     } = req.body
 
     // Check if email or username is duplocate
-    const dupError = await checkDuplicate(email, username)
-    if (dupError) return res.status(409).json({ message: dupError })
+    const dupError = checkDuplicate(email, username);
+    if (dupError) return res.status(409).json({ message: dupError });
     // Hash the password
     const password_hash = await bcrypt.hash(password, 10)
     const user = await User.create({
       first_name,
       last_name,
-      username,
       email,
+      username: email.split("@")[0] + "_" + Date.now(), // auto-generated
       password_hash,
       phone,
       role: "coach",
@@ -161,18 +127,21 @@ module.exports.register_coach_post = async (req, res) => {
 // Nutritionist Register
 module.exports.register_nutritionist_post = async (req, res) => {
   try {
-    const { first_name, last_name, username, email, password, phone, price } =
-      req.body
-
-    const dupError = await checkDuplicate(email, username)
-    if (dupError) return res.status(409).json({ message: dupError })
-
-    const password_hash = await bcrypt.hash(password, 10)
+    const { 
+      first_name, 
+      last_name, 
+      username, 
+      email, 
+      password, 
+      phone, 
+      price
+      } = req.body;
+    const password_hash = await bcrypt.hash(password, 10);
     const user = await User.create({
       first_name,
       last_name,
-      username,
       email,
+      username: email.split("@")[0] + "_" + Date.now(),
       password_hash,
       phone,
       role: "nutritionist",
@@ -191,24 +160,15 @@ module.exports.register_nutritionist_post = async (req, res) => {
 }
 module.exports.register_admin_post = async (req, res) => {
   try {
-    if (!process.env.ADMIN_SECRET) {
-      return res
-        .status(500)
-        .json({ message: "ADMIN_SECRET is not configured." })
-    }
-
-    if (req.headers["x-admin-secret"] !== process.env.ADMIN_SECRET) {
-      return res
-        .status(403)
-        .json({ message: "Invalid admin registration secret." })
-    }
-
-    const { first_name, last_name, username, email, password, phone } = req.body
-
-    const dupError = await checkDuplicate(email, username)
-    if (dupError) return res.status(409).json({ message: dupError })
-
-    const password_hash = await bcrypt.hash(password, 10)
+    const { 
+      first_name,
+      last_name, 
+      username, 
+      email, 
+      password, 
+      phone 
+    } = req.body;
+    const password_hash = await bcrypt.hash(password, 10);
     const user = await User.create({
       first_name,
       last_name,
@@ -271,7 +231,7 @@ module.exports.login_post = async (req, res) => {
     // Update last_login timestamp
     await user.update({ last_login: new Date() })
 
-    const token = await signJWToken(user)
+    const token = signJWToken(user);
     res.status(200).json({
       message: "Login successful!",
       token,
@@ -321,4 +281,4 @@ module.exports.delete_all_data_post = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
-}
+};

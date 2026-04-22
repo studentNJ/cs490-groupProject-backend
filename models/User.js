@@ -8,12 +8,16 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
       },
+      google_id: {
+        type: DataTypes.STRING,
+        unique: true,
+        allowNull: true,
+      },
       first_name: {
         type: DataTypes.STRING,
         allowNull: false,
         validate: {
           notEmpty: true,
-          isAlpha: true,
         },
       },
       last_name: {
@@ -21,7 +25,6 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         validate: {
           notEmpty: true,
-          isAlpha: true,
         },
       },
       username: {
@@ -41,10 +44,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       password_hash: {
         type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-          notEmpty: true,
-        },
+        allowNull: true,
       },
       phone: {
         type: DataTypes.STRING,
@@ -77,6 +77,7 @@ module.exports = (sequelize, DataTypes) => {
   // Associations
   User.associate = (models) => {
     // One to One Relationship
+<<<<<<< HEAD
     User.hasOne(models.Client, { foreignKey: "user_id" })
     User.hasOne(models.Coach, { foreignKey: "user_id" })
     User.hasOne(models.Nutritionist, { foreignKey: "user_id" })
@@ -95,6 +96,28 @@ module.exports = (sequelize, DataTypes) => {
     User.hasMany(models.Meal, { foreignKey: "created_by_user_id" })
     User.hasMany(models.MealPlan, { foreignKey: "created_by_user_id" })
     User.hasMany(models.WorkoutPlan, { foreignKey: "created_by_user_id" })
+=======
+    User.hasOne(models.Client, { foreignKey: "user_id" });
+    User.hasOne(models.Coach, { foreignKey: "user_id" });
+    User.hasOne(models.Nutritionist, { foreignKey: "user_id" });
+
+    // Coach-client relationships (as either side)
+    User.hasMany(models.ClientCoachRelationship, {
+      as: "clientRelationships",
+      foreignKey: "client_user_id",
+    });
+    User.hasMany(models.ClientCoachRelationship, {
+      as: "coachRelationships",
+      foreignKey: "coach_user_id",
+    });
+    /*
+    // things user creates
+    
+    User.hasMany(models.Workout, { foreignKey: "created_by_user_id" });
+    User.hasMany(models.Meal, { foreignKey: "created_by_user_id" });
+    User.hasMany(models.MealPlan, { foreignKey: "created_by_user_id" });
+    User.hasMany(models.WorkoutPlan, { foreignKey: "created_by_user_id" });
+>>>>>>> main
 
     // messaging
     User.hasMany(models.Message, { as: "sentMessages", foreignKey: "from_id" })

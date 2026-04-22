@@ -16,7 +16,20 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DECIMAL(8, 2),
         allowNull: true,
       },
+<<<<<<< HEAD
       is_approved: {
+=======
+      // Add these to match your new migration
+      bio: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      experience_years: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      is_verified: {
+>>>>>>> main
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
@@ -30,7 +43,15 @@ module.exports = (sequelize, DataTypes) => {
   )
   // Associations
   Coach.associate = (models) => {
+<<<<<<< HEAD
     Coach.belongsTo(models.User, { foreignKey: "user_id" }) // coach IS a user
+=======
+    Coach.belongsTo(models.User, { foreignKey: "user_id" }); // coach IS a user
+
+    Coach.hasMany(models.ClientCoachRelationship, {
+      foreignKey: "coach_user_id",
+    });
+>>>>>>> main
     /*
     Coach.hasMany(models.ClientCoachRelationship, {
       foreignKey: "coach_user_id",
