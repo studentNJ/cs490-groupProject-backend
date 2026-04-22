@@ -1,5 +1,5 @@
 const bcrypt = require("bcrypt");
-const { User, Client, Coach, Nutritionist } = require("../models");
+const { User, Client, Coach, Nutritionist, CoachCertification } = require("../models");
 const { signJWToken } = require("../utils/jwt");
 
 // ------ Helpers Functions -------
@@ -65,6 +65,8 @@ module.exports.register_coach_post = async (req, res) => {
       price,
     } = req.body;
 
+    const coachCertificationFile = req.files || []; // for certification uploaded files
+
     // Check if email or username is duplocate
     const dupError = await checkDuplicate(email);
     if (dupError) return res.status(409).json({ message: dupError });
@@ -86,6 +88,15 @@ module.exports.register_coach_post = async (req, res) => {
     });
     // Coaches can also user Client features (U.C 2.4 role switch)
     await Client.create({ user_id: user.user_id });
+
+    if (coachCertificationFile.length > 0){
+      const certificationRows = coachCertificationFile.map((file) => ({
+        user_id: user.user_id,
+        document_url: `/uploads/${file.filename}`,
+        status: "pending",
+      }));
+      await CoachCertification.bulkCreate(certificationRows);
+    }
 
     const token = signJWToken(user);
 

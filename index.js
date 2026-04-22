@@ -46,6 +46,7 @@ app.use("/api/coach", coachDasboardRoutes);
 app.use("/api/client", clientRoutes);
 app.use("/api/qualifications", qualificationRoutes);
 app.use("/api/certifications", certificationRoutes);
+app.use("/uploads", express.static("uploads"));
 
 const server = app.listen(4000, () => {
   console.log("Server running on port 4000");
