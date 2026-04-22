@@ -68,6 +68,20 @@ module.exports = (sequelize, DataTypes) => {
       })
     }
 
+    if (models.Payment) {
+      Client.hasMany(models.Payment, {
+        foreignKey: "client_id",
+        sourceKey: "user_id",
+      })
+    }
+
+    if (models.Subscription) {
+      Client.hasMany(models.Subscription, {
+        foreignKey: "client_id",
+        sourceKey: "user_id",
+      })
+    }
+
     /*
     Client.hasMany(models.ClientCoachRelationship, {
       foreignKey: "client_user_id",

@@ -15,6 +15,7 @@ const workoutRoutes = require("./routes/workoutRoutes")
 const coachDashboardRoutes = require("./routes/coachDashboardRoutes")
 const qualificationRoutes = require("./routes/qualificationRoutes")
 const certificationRoutes = require("./routes/certificationRoutes")
+const paymentRoutes = require("./routes/paymentRoutes")
 
 const app = express()
 // Middleware to parse JSON data for all incoming requests
@@ -44,6 +45,7 @@ app.use("/api/coach", coachDashboardRoutes)
 app.use("/api/client", clientRoutes)
 app.use("/api/qualifications", qualificationRoutes)
 app.use("/api/certifications", certificationRoutes)
+app.use("/api/payments", paymentRoutes)
 app.use("/uploads", express.static("uploads"))
 
 const server = app.listen(4000, () => {
