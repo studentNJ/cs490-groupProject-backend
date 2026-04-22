@@ -1,6 +1,5 @@
-const { where } = require("sequelize");
-const { User, Client } = require("../models");
-const { signJWToken } = require("../utils/jwt");
+const { User, Client } = require("../models")
+const { signJWToken } = require("../utils/jwt")
 
 module.exports.google_redirect = (req, res) => {
   const params = new URLSearchParams({
@@ -8,25 +7,20 @@ module.exports.google_redirect = (req, res) => {
     redirect_uri: process.env.GOOGLE_CALLBACK_URL,
     response_type: "code",
     scope: "email profile",
-  });
+  })
 
-  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`
 
-  res.redirect(googleAuthUrl);
-};
+  res.redirect(googleAuthUrl)
+}
 
 module.exports.google_callback = async (req, res) => {
   try {
-    console.log("Full query:", req.query);
-
-    // Get the code from the callback url that Google returned
-    const code = req.query.code;
+    const code = req.query.code
     if (!code) {
-      res.status(400).json({ message: "No authorization code provided!" });
+      return res.status(400).json({ message: "No authorization code provided!" })
     }
-    console.log("Authorization code received: ", code);
 
-    // Exchange code with Google to get an access token
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -37,40 +31,46 @@ module.exports.google_callback = async (req, res) => {
         redirect_uri: process.env.GOOGLE_CALLBACK_URL,
         grant_type: "authorization_code",
       }),
-    });
+    })
 
-    const tokenData = await tokenResponse.json();
-    console.log("Token response: ", tokenData);
+    const tokenData = await tokenResponse.json()
+    if (!tokenResponse.ok || !tokenData.access_token) {
+      return res.status(502).json({
+        message: "Google token exchange failed.",
+        error: tokenData.error || null,
+      })
+    }
 
-    // Send the access token to Google API for user information
     const userInfoResponse = await fetch(
       "https://www.googleapis.com/oauth2/v2/userinfo",
       {
         headers: { Authorization: `Bearer ${tokenData.access_token}` },
-      }
-    );
-    const userInfo = await userInfoResponse.json();
-    console.log("User info: ", userInfo);
+      },
+    )
+    const userInfo = await userInfoResponse.json()
 
-    // Check if the user already exists
+    if (!userInfoResponse.ok || !userInfo.email || !userInfo.id) {
+      return res.status(502).json({
+        message: "Google user info lookup failed.",
+        error: userInfo.error || null,
+      })
+    }
+
     let user = await User.findOne({
       where: { email: userInfo.email },
-    });
-    // if it's new user, create account
-    if (!user) {
-      // Generate a base username
-      const baseUsername = userInfo.email.split("@")[0];
+    })
 
-      // Check if the username is already taken
-      let finalUsername = `${baseUsername}_g`;
+    if (!user) {
+      const baseUsername = userInfo.email.split("@")[0]
+
+      let finalUsername = `${baseUsername}_g`
       let existingUser = await User.findOne({
         where: { username: finalUsername },
-      });
+      })
 
       if (existingUser) {
-        // If taken, append a slice of google id (last 4 digits)
-        const suffix = userInfo.id.slice(-4);
-        finalUsername = `${baseUsername}_g${suffix}`;
+        const suffix = userInfo.id.slice(-4)
+        finalUsername = `${baseUsername}_g${suffix}`
       }
 
       user = await User.create({
@@ -82,22 +82,19 @@ module.exports.google_callback = async (req, res) => {
         profile_pic: userInfo.picture,
         password_hash: null,
         role: "client",
-      });
+      })
 
-      await Client.create({ user_id: user.user_id });
+      await Client.create({ user_id: user.user_id })
     } else {
-      // Existing user — update profile pic if they don't have one
       if (!user.profile_pic && userInfo.picture) {
-        await user.update({ profile_pic: userInfo.picture });
+        await user.update({ profile_pic: userInfo.picture })
       }
     }
 
-    // Create a JWT token
-    const token = signJWToken(user);
+    const token = signJWToken(user)
 
-    // Redirect user to callback page
-    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
+    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`)
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message })
   }
-};
+}

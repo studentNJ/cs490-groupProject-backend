@@ -1,7 +1,5 @@
-const { underscoredIf } = require("sequelize/lib/utils")
-
-module.exports = (sequalize, DataTypes) => {
-  const Client = sequalize.define(
+module.exports = (sequelize, DataTypes) => {
+  const Client = sequelize.define(
     "Client",
     {
       user_id: {
@@ -62,13 +60,14 @@ module.exports = (sequalize, DataTypes) => {
     },
   )
   Client.associate = (models) => {
-    // One to one
     Client.belongsTo(models.User, { foreignKey: "user_id" })
 
-    // One to many
-    Client.hasMany(models.ClientCoachRelationship, {
-      foreignKey: "client_user_id",
-    });
+    if (models.ClientCoachRelationship) {
+      Client.hasMany(models.ClientCoachRelationship, {
+        foreignKey: "client_user_id",
+      })
+    }
+
     /*
     Client.hasMany(models.ClientCoachRelationship, {
       foreignKey: "client_user_id",

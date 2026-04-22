@@ -1,13 +1,14 @@
-require("dotenv").config();
-const express = require("express");
-const sequelize = require("./config/database");
-const bcrypt = require("bcrypt");
-const { User } = require("./models");
-const jwt = require("jsonwebtoken"); // JWT
+require("dotenv").config()
+const cors = require("cors")
+const express = require("express")
+const sequelize = require("./config/database")
 
-const authRoutes = require("./routes/authRoutes");
+const authRoutes = require("./routes/authRoutes")
+const adminRoutes = require("./routes/adminRoutes")
+const profileRoutes = require("./routes/profileRoutes")
+const surveyRoutes = require("./routes/surveyRoutes")
 
-const app = express();
+const app = express()
 // Middleware to parse JSON data for all incoming requests
 app.use(
   cors({
@@ -22,8 +23,11 @@ sequelize
   .then(() => console.log("Database connected"))
   .catch((err) => console.error("DB error:", err))
 
-app.use(authRoutes); // Auth routes
+app.use("/auth", authRoutes)
+app.use("/admin", adminRoutes)
+app.use("/profile", profileRoutes)
+app.use("/survey", surveyRoutes)
 
 app.listen(4000, () => {
-  console.log("Server running on port 4000");
-});
+  console.log("Server running on port 4000")
+})

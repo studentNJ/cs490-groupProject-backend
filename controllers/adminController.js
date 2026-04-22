@@ -5,6 +5,8 @@ const {
   AdminAuditLog,
   Client,
   Coach,
+  CoachReport,
+  Exercise,
   Nutritionist,
   User,
 } = require("../models")
@@ -68,6 +70,24 @@ const auditLogIncludes = [
   },
 ]
 
+const coachReportIncludes = [
+  {
+    model: User,
+    as: "reporter",
+    attributes: ["user_id", "first_name", "last_name", "email", "role"],
+  },
+  {
+    model: User,
+    as: "coach",
+    attributes: ["user_id", "first_name", "last_name", "email", "role"],
+  },
+  {
+    model: User,
+    as: "reviewedBy",
+    attributes: ["user_id", "first_name", "last_name", "email", "role"],
+  },
+]
+
 const createAuditLog = async ({
   actorUserId,
   targetUserId = null,
@@ -109,6 +129,10 @@ const deleteRoleRecords = async (userId, transaction) => {
       RoleModel.destroy({ where: { user_id: userId }, transaction }),
     ),
   )
+}
+
+const sortUsersById = (users) => {
+  return [...users].sort((leftUser, rightUser) => leftUser.user_id - rightUser.user_id)
 }
 
 module.exports.getAllUsers = async (req, res) => {
@@ -397,7 +421,9 @@ module.exports.approveRegistration = async (req, res) => {
 
     await transaction.commit()
 
-    res.status(200).json({ message: "Approval status updated." })
+    const updatedUser = await sanitizeUser(user.user_id)
+
+    res.status(200).json({ message: "Approval status updated.", user: updatedUser })
   } catch (error) {
     await transaction.rollback()
     res.status(500).json({ error: error.message })
@@ -554,23 +580,417 @@ module.exports.getStats = async (_req, res) => {
 
 module.exports.getPendingApprovals = async (_req, res) => {
   try {
+    const { limit, offset, page } = parsePagination(_req.query)
+    const requestedRole = _req.query.role
+    const shouldLoadCoaches = !requestedRole || requestedRole === "coach"
+    const shouldLoadNutritionists =
+      !requestedRole || requestedRole === "nutritionist"
+
     const [coaches, nutritionists] = await Promise.all([
-      User.findAll({
-        where: { role: "coach" },
-        attributes: userAttributes,
-        include: [{ model: Coach, where: { is_approved: false } }],
-        order: [["user_id", "ASC"]],
-      }),
-      User.findAll({
-        where: { role: "nutritionist" },
-        attributes: userAttributes,
-        include: [{ model: Nutritionist, where: { is_approved: false } }],
-        order: [["user_id", "ASC"]],
-      }),
+      shouldLoadCoaches
+        ? User.findAll({
+            where: { role: "coach" },
+            attributes: userAttributes,
+            include: [{ model: Coach, where: { is_approved: false } }],
+          })
+        : Promise.resolve([]),
+      shouldLoadNutritionists
+        ? User.findAll({
+            where: { role: "nutritionist" },
+            attributes: userAttributes,
+            include: [{ model: Nutritionist, where: { is_approved: false } }],
+          })
+        : Promise.resolve([]),
     ])
 
-    res.status(200).json({ pending: [...coaches, ...nutritionists] })
+    const pending = sortUsersById([...coaches, ...nutritionists])
+
+    res.status(200).json({
+      pending: pending.slice(offset, offset + limit),
+      pagination: {
+        page,
+        limit,
+        total: pending.length,
+        totalPages: Math.ceil(pending.length / limit) || 1,
+      },
+    })
   } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+module.exports.getExercises = async (req, res) => {
+  try {
+    const { limit, offset, page } = parsePagination(req.query)
+    const where = {}
+
+    const isActive = parseBoolean(req.query.is_active)
+    if (isActive !== undefined) {
+      where.is_active = isActive
+    }
+
+    if (req.query.category) {
+      where.category = req.query.category
+    }
+
+    if (req.query.equipment) {
+      where.equipment = req.query.equipment
+    }
+
+    if (req.query.search) {
+      where[Op.or] = [
+        { name: { [Op.like]: `%${req.query.search}%` } },
+        { category: { [Op.like]: `%${req.query.search}%` } },
+        { equipment: { [Op.like]: `%${req.query.search}%` } },
+        { pirmary_muscles: { [Op.like]: `%${req.query.search}%` } },
+      ]
+    }
+
+    const { count, rows } = await Exercise.findAndCountAll({
+      where,
+      order: [["exercise_id", "ASC"]],
+      limit,
+      offset,
+    })
+
+    res.status(200).json({
+      exercises: rows,
+      pagination: {
+        page,
+        limit,
+        total: count,
+        totalPages: Math.ceil(count / limit) || 1,
+      },
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+module.exports.createExercise = async (req, res) => {
+  const transaction = await User.sequelize.transaction()
+
+  try {
+    const {
+      name,
+      category,
+      equipment,
+      pirmary_muscles,
+      instructions,
+      video_url,
+      image_url,
+    } = req.body
+
+    if (
+      !name ||
+      !category ||
+      !equipment ||
+      !pirmary_muscles ||
+      !instructions ||
+      !image_url
+    ) {
+      await transaction.rollback()
+      return res.status(400).json({
+        message:
+          "name, category, equipment, pirmary_muscles, instructions, and image_url are required.",
+      })
+    }
+
+    const exercise = await Exercise.create(
+      {
+        name,
+        category,
+        equipment,
+        pirmary_muscles,
+        instructions,
+        video_url,
+        image_url,
+      },
+      { transaction },
+    )
+
+    await createAuditLog({
+      actorUserId: req.user.user_id,
+      action: "exercise.create",
+      metadata: {
+        exercise_id: exercise.exercise_id,
+        name: exercise.name,
+      },
+      transaction,
+    })
+
+    await transaction.commit()
+
+    res.status(201).json({
+      message: "Exercise created successfully.",
+      exercise,
+    })
+  } catch (error) {
+    await transaction.rollback()
+    res.status(500).json({ error: error.message })
+  }
+}
+
+module.exports.updateExercise = async (req, res) => {
+  const transaction = await User.sequelize.transaction()
+
+  try {
+    const exercise = await Exercise.findByPk(req.params.id, { transaction })
+
+    if (!exercise) {
+      await transaction.rollback()
+      return res.status(404).json({ message: "Exercise not found!" })
+    }
+
+    const allowedFields = [
+      "name",
+      "category",
+      "equipment",
+      "pirmary_muscles",
+      "instructions",
+      "video_url",
+      "image_url",
+    ]
+
+    const updates = allowedFields.reduce((accumulator, field) => {
+      if (req.body[field] !== undefined) {
+        accumulator[field] = req.body[field]
+      }
+
+      return accumulator
+    }, {})
+
+    if (Object.keys(updates).length === 0) {
+      await transaction.rollback()
+      return res.status(400).json({ message: "No exercise fields provided." })
+    }
+
+    await exercise.update(updates, { transaction })
+
+    await createAuditLog({
+      actorUserId: req.user.user_id,
+      action: "exercise.update",
+      metadata: {
+        exercise_id: exercise.exercise_id,
+        updated_fields: Object.keys(updates),
+      },
+      transaction,
+    })
+
+    await transaction.commit()
+
+    res.status(200).json({
+      message: "Exercise updated successfully.",
+      exercise,
+    })
+  } catch (error) {
+    await transaction.rollback()
+    res.status(500).json({ error: error.message })
+  }
+}
+
+module.exports.deleteExercise = async (req, res) => {
+  const transaction = await User.sequelize.transaction()
+
+  try {
+    const exercise = await Exercise.findByPk(req.params.id, { transaction })
+
+    if (!exercise) {
+      await transaction.rollback()
+      return res.status(404).json({ message: "Exercise not found!" })
+    }
+
+    await createAuditLog({
+      actorUserId: req.user.user_id,
+      action: "exercise.deactivate",
+      metadata: {
+        exercise_id: exercise.exercise_id,
+        name: exercise.name,
+      },
+      transaction,
+    })
+
+    await exercise.update({ is_active: false }, { transaction })
+
+    await transaction.commit()
+
+    res.status(200).json({
+      message: "Exercise deactivated successfully.",
+      exercise,
+    })
+  } catch (error) {
+    await transaction.rollback()
+    res.status(500).json({ error: error.message })
+  }
+}
+
+module.exports.reactivateExercise = async (req, res) => {
+  const transaction = await User.sequelize.transaction()
+
+  try {
+    const exercise = await Exercise.findByPk(req.params.id, { transaction })
+
+    if (!exercise) {
+      await transaction.rollback()
+      return res.status(404).json({ message: "Exercise not found!" })
+    }
+
+    await exercise.update({ is_active: true }, { transaction })
+
+    await createAuditLog({
+      actorUserId: req.user.user_id,
+      action: "exercise.reactivate",
+      metadata: {
+        exercise_id: exercise.exercise_id,
+        name: exercise.name,
+      },
+      transaction,
+    })
+
+    await transaction.commit()
+
+    res.status(200).json({
+      message: "Exercise reactivated successfully.",
+      exercise,
+    })
+  } catch (error) {
+    await transaction.rollback()
+    res.status(500).json({ error: error.message })
+  }
+}
+
+module.exports.getCoachReports = async (req, res) => {
+  try {
+    const { limit, offset, page } = parsePagination(req.query)
+    const where = {}
+
+    if (req.query.status) {
+      where.status = req.query.status
+    }
+
+    if (req.query.severity) {
+      where.severity = req.query.severity
+    }
+
+    if (req.query.coach_user_id) {
+      where.coach_user_id = req.query.coach_user_id
+    }
+
+    const { count, rows } = await CoachReport.findAndCountAll({
+      where,
+      include: coachReportIncludes,
+      order: [["created_at", "DESC"]],
+      limit,
+      offset,
+    })
+
+    res.status(200).json({
+      reports: rows,
+      pagination: {
+        page,
+        limit,
+        total: count,
+        totalPages: Math.ceil(count / limit) || 1,
+      },
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+module.exports.getCoachReportById = async (req, res) => {
+  try {
+    const report = await CoachReport.findByPk(req.params.id, {
+      include: coachReportIncludes,
+    })
+
+    if (!report) {
+      return res.status(404).json({ message: "Coach report not found!" })
+    }
+
+    res.status(200).json({ report })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+module.exports.updateCoachReportStatus = async (req, res) => {
+  const transaction = await User.sequelize.transaction()
+
+  try {
+    const { status, resolution_notes } = req.body
+    const allowedStatuses = [
+      "open",
+      "under_review",
+      "resolved",
+      "dismissed",
+      "escalated",
+    ]
+
+    if (!allowedStatuses.includes(status)) {
+      await transaction.rollback()
+      return res.status(400).json({ message: "Invalid report status." })
+    }
+
+    if (
+      (status === "resolved" || status === "dismissed") &&
+      (!resolution_notes || !String(resolution_notes).trim())
+    ) {
+      await transaction.rollback()
+      return res.status(400).json({
+        message: "resolution_notes is required when resolving or dismissing a report.",
+      })
+    }
+
+    const report = await CoachReport.findByPk(req.params.id, { transaction })
+
+    if (!report) {
+      await transaction.rollback()
+      return res.status(404).json({ message: "Coach report not found!" })
+    }
+
+    const updates = {
+      status,
+      admin_reviewed_by_user_id: req.user.user_id,
+      resolution_notes: resolution_notes ?? report.resolution_notes,
+      reviewed_at: new Date(),
+    }
+
+    if (status === "resolved" || status === "dismissed") {
+      updates.resolved_at = new Date()
+    }
+
+    await report.update(updates, { transaction })
+
+    await createAuditLog({
+      actorUserId: req.user.user_id,
+      targetUserId: report.coach_user_id,
+      action:
+        status === "resolved"
+          ? "report.resolve"
+          : status === "dismissed"
+            ? "report.dismiss"
+            : "report.status_change",
+      metadata: {
+        report_id: report.report_id,
+        previous_status: report.previous("status"),
+        new_status: status,
+      },
+      transaction,
+    })
+
+    await transaction.commit()
+
+    const updatedReport = await CoachReport.findByPk(report.report_id, {
+      include: coachReportIncludes,
+    })
+
+    res.status(200).json({
+      message: "Coach report status updated.",
+      report: updatedReport,
+    })
+  } catch (error) {
+    await transaction.rollback()
     res.status(500).json({ error: error.message })
   }
 }

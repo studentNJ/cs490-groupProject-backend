@@ -18,5 +18,13 @@ router.put("/users/:id/approve", adminController.approveRegistration)
 router.delete("/users/:id", adminController.deleteUser)
 router.get("/stats", adminController.getStats)
 router.get("/pending", adminController.getPendingApprovals)
+router.get("/exercises", adminController.getExercises)
+router.post("/exercises", adminController.createExercise)
+router.put("/exercises/:id", adminController.updateExercise)
+router.delete("/exercises/:id", adminController.deleteExercise)
+router.put("/exercises/:id/reactivate", adminController.reactivateExercise)
+router.get("/reports/coach", adminController.getCoachReports)
+router.get("/reports/coach/:id", adminController.getCoachReportById)
+router.put("/reports/coach/:id/status", adminController.updateCoachReportStatus)
 
 module.exports = router

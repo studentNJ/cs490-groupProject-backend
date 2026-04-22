@@ -1,6 +1,3 @@
-const { DataTypes } = require("sequelize");
-const workout = require("./workout");
-
 module.exports = (sequelize, DataTypes) => {
     const workoutExercise = sequelize.define(
         "workoutExercise",
@@ -43,18 +40,21 @@ module.exports = (sequelize, DataTypes) => {
             },
         },
         {
-            tableName:"workout_exercise",
-            underscored:true,
+            tableName: "workout_exercise",
+            underscored: true,
             timestamps: false,
-        }
-    );
+        },
+    )
 
-    //Associations
     workoutExercise.associate = (models) => {
-       
-        workoutExercise.belongsTo(models.Workout, { foreignKey: "workout_id" });
-        workoutExercise.belongsTo(models.Exercise, { foreignKey: "exercise_id" });
-    };
+        if (models.Workout) {
+            workoutExercise.belongsTo(models.Workout, { foreignKey: "workout_id" })
+        }
 
-    return workoutExercise;
-};
+        if (models.Exercise) {
+            workoutExercise.belongsTo(models.Exercise, { foreignKey: "exercise_id" })
+        }
+    }
+
+    return workoutExercise
+}

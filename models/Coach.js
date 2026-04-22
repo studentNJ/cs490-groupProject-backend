@@ -1,6 +1,4 @@
 module.exports = (sequelize, DataTypes) => {
-  // Coach Model
-  // Coach model
   const Coach = sequelize.define(
     "Coach",
     {
@@ -16,10 +14,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DECIMAL(8, 2),
         allowNull: true,
       },
-<<<<<<< HEAD
       is_approved: {
-=======
-      // Add these to match your new migration
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       bio: {
         type: DataTypes.TEXT,
         allowNull: true,
@@ -29,7 +28,6 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
       is_verified: {
->>>>>>> main
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
@@ -41,17 +39,16 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: false, // coach table only have updated_at not craeted_at
     },
   )
-  // Associations
-  Coach.associate = (models) => {
-<<<<<<< HEAD
-    Coach.belongsTo(models.User, { foreignKey: "user_id" }) // coach IS a user
-=======
-    Coach.belongsTo(models.User, { foreignKey: "user_id" }); // coach IS a user
 
-    Coach.hasMany(models.ClientCoachRelationship, {
-      foreignKey: "coach_user_id",
-    });
->>>>>>> main
+  Coach.associate = (models) => {
+    Coach.belongsTo(models.User, { foreignKey: "user_id" }) // coach IS a user
+
+    if (models.ClientCoachRelationship) {
+      Coach.hasMany(models.ClientCoachRelationship, {
+        foreignKey: "coach_user_id",
+      })
+    }
+
     /*
     Coach.hasMany(models.ClientCoachRelationship, {
       foreignKey: "coach_user_id",
