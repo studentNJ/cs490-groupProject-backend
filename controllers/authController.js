@@ -1,6 +1,13 @@
-const jwt = require("jsonwebtoken")
 const bcrypt = require("bcrypt")
-const { Admin, User, Client, Coach, Nutritionist } = require("../models")
+const {
+  Admin,
+  User,
+  Client,
+  Coach,
+  Nutritionist,
+  CoachCertification,
+} = require("../models")
+const { signJWToken } = require("../utils/jwt")
 
 const userIncludes = [
   { model: Client },
@@ -18,17 +25,6 @@ const checkDuplicate = async (email, username) => {
   if (byUsername) return "Username is already taken!"
 
   return null
-}
-
-const signJWToken = async (user) => {
-  return jwt.sign(
-    {
-      user_id: user.user_id,
-      role: user.role,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: "1d" },
-  )
 }
 
 const buildUserResponse = async (user) => {
@@ -92,6 +88,8 @@ module.exports.register_coach_post = async (req, res) => {
       price,
     } = req.body
 
+    const coachCertificationFile = req.files || []; // for certification uploaded files
+
     // Check if email or username is duplocate
     const generatedUsername = username || `${email.split("@")[0]}_${Date.now()}`
     const dupError = await checkDuplicate(email, generatedUsername)
@@ -115,6 +113,15 @@ module.exports.register_coach_post = async (req, res) => {
     })
     // Coaches can also user Client features (U.C 2.4 role switch)
     await Client.create({ user_id: user.user_id })
+
+    if (coachCertificationFile.length > 0) {
+      const certificationRows = coachCertificationFile.map((file) => ({
+        user_id: user.user_id,
+        document_url: `/uploads/${file.filename}`,
+        status: "pending",
+      }))
+      await CoachCertification.bulkCreate(certificationRows)
+    }
 
     res
       .status(201)

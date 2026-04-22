@@ -1,12 +1,18 @@
 const { Router } = require("express")
 const authController = require("../controllers/authController.js")
 const auth = require("../middleware/authMiddleware")
+const googleAuthController = require("../controllers/googleAuthController");
+const upload = require("../middleware/documentUpload")
 
 const router = Router()
 
 // -- Public Routes --
 router.post("/register/client", authController.register_client_post)
-router.post("/register/coach", authController.register_coach_post)
+router.post(
+  "/register/coach",
+  upload.array("certification", 5),
+  authController.register_coach_post,
+)
 router.post(
   "/register/nutritionist",
   authController.register_nutritionist_post

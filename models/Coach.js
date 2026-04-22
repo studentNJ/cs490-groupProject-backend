@@ -49,6 +49,17 @@ module.exports = (sequelize, DataTypes) => {
       })
     }
 
+    if (models.CoachQualification) {
+      Coach.hasMany(models.CoachQualification, {
+        foreignKey: "coach_user_id",
+      })
+    }
+
+    if (models.CoachCertification) {
+      Coach.hasMany(models.CoachCertification, {
+        foreignKey: "coach_user_id",
+      })
+    }
     /*
     Coach.hasMany(models.ClientCoachRelationship, {
       foreignKey: "coach_user_id",
