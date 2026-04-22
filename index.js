@@ -1,55 +1,53 @@
-require("dotenv").config();
-const express = require("express");
-const sequelize = require("./config/database");
-const bcrypt = require("bcrypt");
-const { User } = require("./models");
-const jwt = require("jsonwebtoken"); // JWT
-require("dotenv").config();
-const { initSocket } = require("./socket");
+require("dotenv").config()
+const cors = require("cors")
+const express = require("express")
+const sequelize = require("./config/database")
+const { initSocket } = require("./socket")
 
-const authRoutes = require("./routes/authRoutes");
-const surveyRoutes = require("./routes/surveyRoutes");
-const profileRoutes = require("./routes/profileRoutes");
-const messageRoutes = require("./routes/messageRoutes");
-const coachRoutes = require("./routes/coachRoutes");
-const clientRoutes = require("./routes/clientRoutes");
-const workoutRoutes = require("./routes/workoutRoutes");
-const coachDasboardRoutes = require("./routes/coachDashboardRoutes");
-const qualificationRoutes = require("./routes/qualificationRoutes");
-const certificationRoutes = require("./routes/certificationRoutes");
+const authRoutes = require("./routes/authRoutes")
+const adminRoutes = require("./routes/adminRoutes")
+const profileRoutes = require("./routes/profileRoutes")
+const surveyRoutes = require("./routes/surveyRoutes")
+const messageRoutes = require("./routes/messageRoutes")
+const coachRoutes = require("./routes/coachRoutes")
+const clientRoutes = require("./routes/clientRoutes")
+const workoutRoutes = require("./routes/workoutRoutes")
+const coachDashboardRoutes = require("./routes/coachDashboardRoutes")
+const qualificationRoutes = require("./routes/qualificationRoutes")
+const certificationRoutes = require("./routes/certificationRoutes")
 
-// CORS
-const cors = require("cors");
-
-const app = express();
+const app = express()
+// Middleware to parse JSON data for all incoming requests
 app.use(
   cors({
-    origin: ["http://localhost:3001", "http://localhost:3000"], // tells the browser "allow requests from this frontend URL"
-    credentials: true, // allows tokens and cookies to be sent with requests.
-  })
-);
-// Middleware to parse JSON data for all incoming requests
-app.use(express.json());
+    origin: process.env.FRONTEND_URL || true,
+    credentials: true,
+  }),
+)
+app.use(express.json())
 
 sequelize
   .authenticate()
   .then(() => console.log("Database connected"))
-  .catch((err) => console.error("DB error:", err));
+  .catch((err) => console.error("DB error:", err))
 
-app.use("/auth", authRoutes); // Auth routes
-app.use("/api/survey", surveyRoutes); // Initial Survey routes
-app.use("/api/profile", profileRoutes); // Profile routes
-app.use("/message", messageRoutes); // Profile routes
-app.use("/api/workout", workoutRoutes);
-app.use("/api/coaches", coachRoutes);
-app.use("/api/coach", coachDasboardRoutes);
-app.use("/api/client", clientRoutes);
-app.use("/api/qualifications", qualificationRoutes);
-app.use("/api/certifications", certificationRoutes);
-app.use("/uploads", express.static("uploads"));
+app.use("/auth", authRoutes)
+app.use("/admin", adminRoutes)
+app.use("/api/survey", surveyRoutes)
+app.use("/api/profile", profileRoutes)
+app.use("/profile", profileRoutes)
+app.use("/survey", surveyRoutes)
+app.use("/message", messageRoutes)
+app.use("/api/workout", workoutRoutes)
+app.use("/api/coaches", coachRoutes)
+app.use("/api/coach", coachDashboardRoutes)
+app.use("/api/client", clientRoutes)
+app.use("/api/qualifications", qualificationRoutes)
+app.use("/api/certifications", certificationRoutes)
+app.use("/uploads", express.static("uploads"))
 
 const server = app.listen(4000, () => {
-  console.log("Server running on port 4000");
-});
+  console.log("Server running on port 4000")
+})
 
-initSocket(server);
+initSocket(server)

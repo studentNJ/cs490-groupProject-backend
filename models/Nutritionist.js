@@ -10,31 +10,36 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DECIMAL(8, 2),
         allowNull: true,
       },
+      is_approved: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
     },
     {
       tableName: "nutritionist",
       underscored: true,
       timestamps: false,
-    }
-  );
+    },
+  )
 
   Nutritionist.associate = (models) => {
     // One to one
-    Nutritionist.belongsTo(models.User, { foreignKey: "user_id" });
+    Nutritionist.belongsTo(models.User, { foreignKey: "user_id" })
     /*
     // One to many
     Nutritionist.hasMany(models.ClientNutritionistRelationship, {
       foreignKey: "nutritionist_user_id",
-    });
+    })
     Nutritionist.hasMany(models.NutritionistReview, {
       foreignKey: "nutritionist_user_id",
-    });
+    })
     Nutritionist.hasMany(models.NutritionPlan, {
       foreignKey: "nutritionist_id",
-    });
-    Nutritionist.hasMany(models.Payment, { foreignKey: "nutritionist_id" });
+    })
+    Nutritionist.hasMany(models.Payment, { foreignKey: "nutritionist_id" })
     */
-  };
+  }
 
-  return Nutritionist;
-};
+  return Nutritionist
+}
