@@ -15,6 +15,8 @@ const coachRoutes = require("./routes/coachRoutes");
 const clientRoutes = require("./routes/clientRoutes");
 const workoutRoutes = require("./routes/workoutRoutes");
 const coachDasboardRoutes = require("./routes/coachDashboardRoutes");
+const qualificationRoutes = require("./routes/qualificationRoutes");
+const certificationRoutes = require("./routes/certificationRoutes");
 
 // CORS
 const cors = require("cors");
@@ -42,6 +44,8 @@ app.use("/api/workout", workoutRoutes);
 app.use("/api/coaches", coachRoutes);
 app.use("/api/coach", coachDasboardRoutes);
 app.use("/api/client", clientRoutes);
+app.use("/api/qualifications", qualificationRoutes);
+app.use("/api/certifications", certificationRoutes);
 
 const server = app.listen(4000, () => {
   console.log("Server running on port 4000");

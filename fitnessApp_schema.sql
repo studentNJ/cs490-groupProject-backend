@@ -561,6 +561,7 @@ CREATE TABLE `workout_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+
 --
 -- Table structure for table `workout_plan`
 --
@@ -583,6 +584,48 @@ CREATE TABLE `workout_plan` (
   CONSTRAINT `fk_workout_plan_created_by` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+/* table created for coach qualification */
+
+DROP TABLE IF EXISTS `coach_qualification`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `coach_qualification`(
+  `qualification_id` int NOT NULL AUTO_INCREMENT,
+  `coach_id` int NOT NULL,
+  `degree_name` VARCHAR(100) NOT NULL,
+  `institution` VARCHAR(100) NOT NULL,
+  `field_of_study` VARCHAR(100) NOT NULL,
+  `year_completed` int NOT NULL,
+  `document_url` VARCHAR(255),
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`qualification_id`),
+  CONSTRAINT `fk_cq_coach` FOREIGN KEY (`coach_user_id`) REFERENCES `coach`(`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/* table created for coach certifications (only files allowed) */
+DROP TABLE IF EXISTS `coach_certification`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `coach_qualification`(
+  `certification_id` int NOT NULL AUTO_INCREMENT,
+  `coach_id` int NOT NULL,
+  `document_url` VARCHAR(255) NOT NULL,
+  `status` ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+  `admin_comment` TEXT NULL,
+  `reviewed_by ` int NULL,
+  `reviewed_at` DATETIME NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`certification_id`),
+  CONSTRAINT `fk_cc_coach` FOREIGN KEY (`coach_user_id`) REFERENCES `coach`(`user_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_cc_admin` FOREIGN KEY (`reviewed_by`) REFERENCES `admin`(`user_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*!40101 SET character_set_client = @saved_cs_client */;
+
 SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

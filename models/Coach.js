@@ -44,6 +44,14 @@ module.exports = (sequelize, DataTypes) => {
     Coach.hasMany(models.ClientCoachRelationship, {
       foreignKey: "coach_user_id",
     });
+
+    Coach.hasMany(models.CoachQualification,{
+      foreignKey: "coach_user_id",
+    });
+
+    Coach.hasMany(models.CoachCertification, {
+      foreignKey: "coach_user_id",
+    });
     /*
     Coach.hasMany(models.ClientCoachRelationship, {
       foreignKey: "coach_user_id",
