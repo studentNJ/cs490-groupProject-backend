@@ -1,6 +1,7 @@
 const { User, Coach, Client, ClientCoachRelationship } = require("../models");
 const { Op, where } = require("sequelize");
 const { stat } = require("fs");
+const { profile } = require("console");
 
 // /api/coaches - public browse for clients
 module.exports.browse_coaches = async (req, res) => {
@@ -519,6 +520,79 @@ module.exports.get_active_clients = async (req, res) => {
     });
   } catch (error) {
     console.error("get_active_clients error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// GET /api/coach/clients/:clientUserId — overview tab data
+module.exports.get_client_detail = async (req, res) => {
+  try {
+    // Middleware already validated the relationship and attached req.client
+    const clientUserId = req.client.user_id;
+
+    // Fetch full client profile + survey data
+    const clientUser = await User.findOne({
+      where: { user_id: clientUserId },
+      attributes: [
+        "user_id",
+        "first_name",
+        "last_name",
+        "profile_pic",
+        "email",
+      ],
+      include: [
+        {
+          model: Client,
+          attributes: [
+            "height",
+            "weight",
+            "goal_weight",
+            "goal",
+            "type_workout",
+            "diet_preference",
+            "current_activity",
+            "coach_help",
+            "nutritionist_help",
+            "workout_day",
+            "survey_completed",
+          ],
+        },
+      ],
+    });
+
+    if (!clientUser) {
+      return res.status(404).json({ error: "Client not found" });
+    }
+
+    const clientProfile = clientUser.Client;
+    return res.json({
+      user_id: clientUser.user_id,
+      first_name: clientUser.first_name,
+      last_name: clientUser.last_name,
+      profile_pic: clientUser.profile_pic,
+      email: clientUser.email,
+      relationship: {
+        start_date: req.relationship.start_date,
+        status: req.relationship.status,
+      },
+      profile: clientProfile
+        ? {
+            height: clientProfile.height,
+            weight: clientProfile.weight,
+            goal_weight: clientProfile.goal_weight,
+            goal: clientProfile.goal,
+            type_workout: clientProfile.type_workout,
+            diet_preference: clientProfile.diet_preference,
+            current_activity: clientProfile.current_activity,
+            coach_help: clientProfile.coach_help,
+            nutritionist_help: clientProfile.nutritionist_help,
+            workout_day: clientProfile.workout_day,
+            survey_completed: clientProfile.survey_completed,
+          }
+        : null,
+    });
+  } catch (error) {
+    console.error("get_client_detail error:", error);
     res.status(500).json({ error: error.message });
   }
 };
