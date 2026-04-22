@@ -5,7 +5,7 @@ module.exports.add_certification = async (req, res) => { //add certification, de
         const coach_id =  req.user.user_id;
         const certification = await CoachCertification.create({
             coach_id,
-            ...req.body,
+            document_url: `/uploads/${File.filename}`,
             status: "pending",
         });
 
@@ -13,7 +13,7 @@ module.exports.add_certification = async (req, res) => { //add certification, de
             message:"Certification successfuly submitted for review",
             certification,
         });
-    } catch{err} {
+    } catch (err) {
         return res.status(500).json({ error: error.message });
     }
 };
@@ -29,6 +29,19 @@ module.exports.verify_certification = async (req,res) => {
         res.json({message: `Certification is ${status}`});
     } catch (err){
         return res.status(500).json({ error: error.message });
+    }
+};
+
+module.exports.get_certification = async (req, res) => {
+    try {
+        const coach_id = req.user.user_id;
+        const certs = await CoachCertification.findAll({
+            where: {coach_id},
+        });
+
+        req.json(certs);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 };
 
