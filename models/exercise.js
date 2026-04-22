@@ -76,6 +76,9 @@ module.exports = (sequelize, DataTypes) => {
             Exercise.hasMany(models.workoutExercise, { foreignKey: "exercise_id" })
         }
 
+        Exercise.hasMany(models.StrengthLogDetail, { foreignKey: "exercise_id", as: "strengthLogs", });
+
+        Exercise.hasMany(models.CardioLogDetail, { foreignKey: "exercise_id", as: "cardioLogs", });
         if (models.Workout) {
             Exercise.belongsToMany(models.Workout, {
                 through: "workout_exercise",
