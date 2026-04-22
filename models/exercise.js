@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
                 primaryKey: true,
                 autoIncrement: true,
             },
-            
+
             name: {
                 type: DataTypes.STRING,
                 allowNull: false,
@@ -57,24 +57,35 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 allowNull: false,
             },
+
+            is_active: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: true,
+            },
         },
         {
             tableName: "exercise",
             underscored: true,
             timestamps: false,
-        }
-    );
+        },
+    )
 
     Exercise.associate = (models) => {
-        
-        Exercise.hasMany(models.workoutExercise, { foreignKey: "exercise_id" });
-
-        Exercise.belongsToMany(models.Workout, {through: "workout_exercise", foreignKey: "exercise_id" });
+        if (models.workoutExercise) {
+            Exercise.hasMany(models.workoutExercise, { foreignKey: "exercise_id" })
+        }
 
         Exercise.hasMany(models.StrengthLogDetail, { foreignKey: "exercise_id", as: "strengthLogs", });
 
         Exercise.hasMany(models.CardioLogDetail, { foreignKey: "exercise_id", as: "cardioLogs", });
-    };
+        if (models.Workout) {
+            Exercise.belongsToMany(models.Workout, {
+                through: "workout_exercise",
+                foreignKey: "exercise_id",
+            })
+        }
+    }
 
-    return Exercise;
-};
+    return Exercise
+}

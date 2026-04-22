@@ -1,6 +1,4 @@
 module.exports = (sequelize, DataTypes) => {
-  // Coach Model
-  // Coach model
   const Coach = sequelize.define(
     "Coach",
     {
@@ -16,7 +14,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DECIMAL(8, 2),
         allowNull: true,
       },
-      // Add these to match your new migration
+      is_approved: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       bio: {
         type: DataTypes.TEXT,
         allowNull: true,
@@ -35,15 +37,29 @@ module.exports = (sequelize, DataTypes) => {
       tableName: "coach",
       underscored: true,
       timestamps: false, // coach table only have updated_at not craeted_at
-    }
-  );
-  // Associations
-  Coach.associate = (models) => {
-    Coach.belongsTo(models.User, { foreignKey: "user_id" }); // coach IS a user
+    },
+  )
 
-    Coach.hasMany(models.ClientCoachRelationship, {
-      foreignKey: "coach_user_id",
-    });
+  Coach.associate = (models) => {
+    Coach.belongsTo(models.User, { foreignKey: "user_id" }) // coach IS a user
+
+    if (models.ClientCoachRelationship) {
+      Coach.hasMany(models.ClientCoachRelationship, {
+        foreignKey: "coach_user_id",
+      })
+    }
+
+    if (models.CoachQualification) {
+      Coach.hasMany(models.CoachQualification, {
+        foreignKey: "coach_user_id",
+      })
+    }
+
+    if (models.CoachCertification) {
+      Coach.hasMany(models.CoachCertification, {
+        foreignKey: "coach_user_id",
+      })
+    }
     /*
     Coach.hasMany(models.ClientCoachRelationship, {
       foreignKey: "coach_user_id",
@@ -53,9 +69,9 @@ module.exports = (sequelize, DataTypes) => {
     Coach.hasMany(models.CoachingPlan, { foreignKey: "coach_id" }); // coach has many plans
     Coach.hasMany(models.Session, { foreignKey: "coach_id" }); // coach has many sessions
     Coach.hasMany(models.Subscription, { foreignKey: "coach_id" }); // coach has many subscriptions
-    Coach.hasMany(models.Payment, { foreignKey: "coach_id" });
+    Coach.hasMany(models.Payment, { foreignKey: "coach_id" })
     */
-  };
+  }
 
-  return Coach;
-};
+  return Coach
+}
