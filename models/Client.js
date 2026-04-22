@@ -69,6 +69,10 @@ module.exports = (sequalize, DataTypes) => {
     Client.hasMany(models.ClientCoachRelationship, {
       foreignKey: "client_user_id",
     });
+
+    Client.hasMany(models.WellnessLogs, { foreignKey: "user_id", sourceKey: "user_id"});
+    Client.hasMany(models.WorkoutLog, { foreignKey: "client_id" });
+
     /*
     Client.hasMany(models.ClientCoachRelationship, {
       foreignKey: "client_user_id",
@@ -80,7 +84,6 @@ module.exports = (sequalize, DataTypes) => {
     Client.hasMany(models.NutritionistReview, { foreignKey: "client_user_id" });
     Client.hasMany(models.MealPlan, { foreignKey: "client_id" });
     Client.hasMany(models.WorkoutPlan, { foreignKey: "client_id" });
-    Client.hasMany(models.WorkoutLog, { foreignKey: "client_id" });
     Client.hasMany(models.Payment, { foreignKey: "client_id" });
     Client.hasMany(models.Subscription, { foreignKey: "client_id" });
     Client.hasMany(models.Session, { foreignKey: "client_id" });
