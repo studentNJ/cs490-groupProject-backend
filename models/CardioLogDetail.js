@@ -33,7 +33,7 @@ module.exports = (sequelize, DataTypes) => {
             },
         },
         {
-            tableName: "cardio_log-detail",
+            tableName: "cardio_log_detail",
             underscored: true,
             timestamps: true,
             createdAt: "created_at",

@@ -108,7 +108,7 @@ module.exports.update_coach_profile = async (req, res) => {
         experience_years: coach.experience_years,
         specialization: coach.specialization,
         price: coach.price,
-        is_verified: coach.is_verified,
+        is_approved: coach.is_approved,
       },
     })
   } catch (error) {
@@ -145,7 +145,7 @@ module.exports.get_coach_profile = async (req, res) => {
         experience_years: coach.experience_years,
         specialization: coach.specialization,
         price: coach.price,
-        is_verified: coach.is_verified,
+        is_approved: coach.is_approved,
       },
     })
   } catch (err) {
