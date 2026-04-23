@@ -72,6 +72,7 @@ module.exports.create_workout_log = async (req, res) => {
         const userId = req.user.user_id; 
 
         const {
+            workout_id,
             date,
             notes,
             strengthLogs = [],
@@ -96,11 +97,21 @@ module.exports.create_workout_log = async (req, res) => {
             }); 
         }
 
-        
+        const workout = await Workout.findOne({
+            where: {
+                workout_id: workout_id,
+                created_by_user_id: userId
+            }
+        })
+
+        if(!workout) {
+            return res.status(404).json({ error: "workout not found" });
+        }        
 
         const workoutLog = await WorkoutLog.create(
             {
                 client_id: userId,
+                workout_id,
                 date,
                 notes: notes || null,
             },
