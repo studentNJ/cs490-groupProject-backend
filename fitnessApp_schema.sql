@@ -601,7 +601,7 @@ CREATE TABLE `coach_qualification`(
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`qualification_id`),
-  CONSTRAINT `fk_cq_coach` FOREIGN KEY (`coach_user_id`) REFERENCES `coach`(`user_id`) ON DELETE CASCADE
+  CONSTRAINT `fk_cq_coach` FOREIGN KEY (`coach_id`) REFERENCES `coach`(`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -609,18 +609,18 @@ CREATE TABLE `coach_qualification`(
 DROP TABLE IF EXISTS `coach_certification`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `coach_qualification`(
+CREATE TABLE `coach_certification`(
   `certification_id` int NOT NULL AUTO_INCREMENT,
   `coach_id` int NOT NULL,
   `document_url` VARCHAR(255) NOT NULL,
   `status` ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
   `admin_comment` TEXT NULL,
-  `reviewed_by ` int NULL,
+  `reviewed_by` int NULL,
   `reviewed_at` DATETIME NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`certification_id`),
-  CONSTRAINT `fk_cc_coach` FOREIGN KEY (`coach_user_id`) REFERENCES `coach`(`user_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_cc_coach` FOREIGN KEY (`coach_id`) REFERENCES `coach`(`user_id`) ON DELETE CASCADE,
   CONSTRAINT `fk_cc_admin` FOREIGN KEY (`reviewed_by`) REFERENCES `admin`(`user_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
