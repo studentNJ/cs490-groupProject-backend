@@ -1,4 +1,13 @@
-const { User, Coach, Client, ClientCoachRelationship } = require("../models");
+const {
+  User,
+  Coach,
+  Client,
+  Workout,
+  ClientCoachRelationship,
+  WorkoutLog,
+  AssignedWorkout,
+  CoachNote,
+} = require("../models");
 const { Op, where } = require("sequelize");
 const { stat } = require("fs");
 const { profile } = require("console");
@@ -22,7 +31,7 @@ module.exports.browse_coaches = async (req, res) => {
             "specialization",
             "price",
             "experience_years",
-            "is_verified",
+            "is_approved",
           ],
         },
       ],
@@ -64,7 +73,7 @@ module.exports.get_coach = async (req, res) => {
             "specialization",
             "price",
             "experience_years",
-            "is_verified",
+            "is_approved",
           ],
         },
       ],
@@ -111,6 +120,7 @@ module.exports.request_coach = async (req, res) => {
     if (!coach) {
       return res.status(404).json({ error: "Coach not found" });
     }
+
     // Rule 4: client can't already have a pending OR active relationship
     const existing = await ClientCoachRelationship.findOne({
       where: {
@@ -124,23 +134,42 @@ module.exports.request_coach = async (req, res) => {
         error:
           existing.status === "pending"
             ? "You already have a pending request. Cancel it before requesting another coach."
-            : "You alrady have an active coach. Unhire them first.",
+            : "You already have an active coach. Unhire them first.",
         current_coach_user_id: existing.coach_user_id,
         current_status: existing.status,
       });
     }
+
     // Ensure this user has a client row (supports coaches acting as clients)
     await Client.findOrCreate({
       where: { user_id: clientUserId },
       defaults: { user_id: clientUserId },
     });
 
-    // Rule 5: create the pending request
-    const relationship = await ClientCoachRelationship.create({
-      client_user_id: clientUserId,
-      coach_user_id: coachUserId,
-      status: "pending",
+    // Rule 5: create OR reactivate the request row
+    // findOrCreate handles the unique constraint — if an inactive/rejected row
+    // exists for (client, coach), we reuse and reactivate it instead of INSERT'ing
+    const [relationship, created] = await ClientCoachRelationship.findOrCreate({
+      where: {
+        client_user_id: clientUserId,
+        coach_user_id: coachUserId,
+      },
+      defaults: {
+        status: "pending",
+        requested_at: new Date(),
+      },
     });
+
+    if (!created) {
+      // Row already existed (e.g., previously rejected or inactive) — reactivate
+      await relationship.update({
+        status: "pending",
+        requested_at: new Date(),
+        responded_at: null,
+        start_date: null,
+        end_date: null,
+      });
+    }
 
     return res.status(201).json({
       message: "Request sent. Awaiting coach approval.",
@@ -217,7 +246,7 @@ module.exports.get_my_coach = async (req, res) => {
                 "specialization",
                 "price",
                 "experience_years",
-                "is_verified",
+                "is_approved",
               ],
             },
           ],
@@ -246,7 +275,7 @@ module.exports.get_my_coach = async (req, res) => {
         specialization: coachProfile.specialization,
         price: coachProfile.price,
         experience_years: coachProfile.experience_years,
-        is_verified: coachProfile.is_verified,
+        is_approved: coachProfile.is_approved,
       },
     });
   } catch (error) {
@@ -593,6 +622,356 @@ module.exports.get_client_detail = async (req, res) => {
     });
   } catch (error) {
     console.error("get_client_detail error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// GET /api/coach/clients/:clientUserId/workouts/logs - reads workout_log entries for client, joined with workout info so the coach sees what the client did
+module.exports.get_client_workout_logs = async (req, res) => {
+  try {
+    const clientUserId = req.client.user_id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const logs = await WorkoutLog.findAndCountAll({
+      where: { client_id: clientUserId },
+      include: [
+        {
+          model: Workout,
+          attributes: [
+            "workout_id",
+            "title",
+            "description",
+            "estimated_minutes",
+          ],
+        },
+      ],
+      order: [["date", "DESC"]],
+      limit,
+      offset,
+    });
+
+    return res.json({
+      totalItems: logs.count,
+      totalPages: Math.max(1, Math.ceil(logs.count / limit)),
+      currentPage: page,
+      data: logs.rows,
+    });
+  } catch (error) {
+    console.error("get_client_workout_logs error", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// GET /api/coach/clients/:clientUserId/workouts/assigned — assigned workouts for this client
+module.exports.get_client_assigned_workouts = async (req, res) => {
+  try {
+    const clientUserId = req.client.user_id;
+    const coachUserId = req.user.user_id;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.page) || 20;
+    const offset = (page - 1) * limit;
+
+    const statusFilter = req.query.status;
+    const validStatuses = ["assigned", "completed", "skipped"];
+    const where = {
+      coach_user_id: coachUserId,
+      client_user_id: clientUserId,
+    };
+    if (statusFilter && validStatuses.includes(statusFilter)) {
+      where.status = statusFilter;
+    }
+
+    const assignments = await AssignedWorkout.findAndCountAll({
+      where,
+      include: [
+        {
+          model: Workout,
+          attributes: [
+            "workout_id",
+            "title",
+            "description",
+            "estimated_minutes",
+          ],
+        },
+      ],
+      order: [
+        ["status", "ASC"],
+        ["assigned_at", "DESC"],
+      ],
+      limit,
+      offset,
+    });
+
+    return res.json({
+      totalItems: assignments.count,
+      totalPages: Math.max(1, Math.ceil(assignments.count / limit)),
+      currentPage: page,
+      data: assignments.rows,
+    });
+  } catch (error) {
+    console.error("get_client_assigned_workouts error", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// POST /api/coach/clients/:clientUserId/workouts/assign Coach assigns one of their own workouts to this client. This is the action endpoint — it creates a new assigned_workout row
+
+module.exports.assign_workout = async (req, res) => {
+  try {
+    const clientUserId = req.client.user_id;
+    const coachUserId = req.user.user_id;
+    const { workout_id, due_date, coach_notes } = req.body;
+
+    if (!workout_id) {
+      return res.status(400).json({ error: "workout_id is required" });
+    }
+
+    // verify the workout exists and was created by this coach
+    const workout = await Workout.findOne({
+      where: {
+        workout_id,
+        created_by_user_id: coachUserId,
+      },
+    });
+
+    if (!workout) {
+      return res.status(404).json({
+        error: "Workout not found or you don't own this workout",
+      });
+    }
+
+    // Prevent duplicate active assignment of the same workout
+    const existing = await AssignedWorkout.findOne({
+      where: {
+        coach_user_id: coachUserId,
+        client_user_id: clientUserId,
+        workout_id,
+        status: "assigned",
+      },
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        error: "This workout is already assigned to this client",
+        existing_assignment_id: existing.assigned_workout_id,
+      });
+    }
+
+    // validate due_date format (YYYY-MM-DD)
+    if (due_date && !/^\d{4}-\d{2}-\d{2}$/.test(due_date)) {
+      return res.status(400).json({
+        error: "due_date must be in YYYY-MM-DD format",
+      });
+    }
+    const assignment = await AssignedWorkout.create({
+      coach_user_id: coachUserId,
+      client_user_id: clientUserId,
+      workout_id,
+      due_date: due_date || null,
+      coach_notes: coach_notes || null,
+    });
+
+    return res.status(201).json({
+      message: "Workout assigned successfully.",
+      assignment: {
+        assigned_workout_id: assignment.assigned_workout_id,
+        workout_id: assignment.workout_id,
+        workout_title: workout.title,
+        due_date: assignment.due_date,
+        coach_notes: assignment.coach_notes,
+        status: assignment.status,
+        assigned_at: assignment.assigned_at,
+      },
+    });
+  } catch (error) {
+    console.error("assign_workout error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// DELETE /api/coach/assignments/:assignmentId — coach unassigns a workout
+module.exports.unassign_workout = async (req, res) => {
+  try {
+    const coachUserId = req.user.user_id;
+    const assignmentId = parseInt(req.params.assignmentId);
+
+    // Mode check - coach only
+    const activeRole = req.headers["x-active-role"] || req.user.role;
+    if (activeRole !== "coach") {
+      return res.status(403).json({ error: "Coaches only" });
+    }
+
+    if (isNaN(assignmentId)) {
+      return res.status(400).json({ error: "Invalid assignment id" });
+    }
+
+    // verify assignment exists AND belongs to this coach
+    const assignment = await AssignedWorkout.dinfOne({
+      where: {
+        assinged_workout_id: assignmentId,
+        coach_user_id: coachUserId,
+      },
+    });
+    if (!assignment) {
+      return res.status(404).json({
+        error: "Assignment not found or you don't own this assignment",
+      });
+    }
+    await assignment.destroy();
+
+    return res.json({ message: "Assignment removed!" });
+  } catch (error) {
+    console.error("unassign_workout_error:", err);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// GET /api/coach/clients/:clientUserId/notes — list all notes for this client
+module.exports.list_client_notes = async (req, res) => {
+  try {
+    const clientUserId = req.client.user_id;
+    const coachUserId = req.user.user_id;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+
+    const notes = await CoachNote.findAndCountAll({
+      where: {
+        coach_user_id: coachUserId,
+        client_user_id: clientUserId,
+      },
+      order: [["created_at", "DESC"]],
+      limit,
+      offset,
+    });
+
+    return res.json({
+      totalItems: notes.count,
+      totalPages: Math.max(1, Math.ceil(notes.count / limit)),
+      currentPage: page,
+      data: notes.rows,
+    });
+  } catch (error) {
+    console.error("list_client_notes error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// POST /api/coach/clients/:clientUserId/notes — coach adds a note about this client
+module.exports.create_client_note = async (req, res) => {
+  try {
+    const clientUserId = req.client.user_id;
+    const coachUserId = req.user.user_id;
+    const { note } = req.body;
+
+    if (!note || typeof note !== "string" || note.trim().length === 0) {
+      return res.status(400).json({ error: "Note text is required" });
+    }
+
+    if (note.length > 5000) {
+      return res
+        .status(400)
+        .json({ error: "Note is too long(max 5000 characters)" });
+    }
+
+    const newNote = await CoachNote.create({
+      coach_user_id: coachUserId,
+      client_user_id: clientUserId,
+      note: note.trim(),
+    });
+
+    return res.status(201).json({
+      message: "Note created successfully.",
+      note: newNote,
+    });
+  } catch (error) {
+    console.error("create_client_note error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+// PATCH /api/coach/notes/:noteId — coach edits a note they own
+module.exports.update_note = async (req, res) => {
+  try {
+    const coachUserId = req.user.user_id;
+    const noteId = parseInt(req.params.noteId);
+    const { note } = req.body;
+
+    // Mode check - coaches only
+    const activeRole = req.headers["x-active-role"] || req.user.role;
+    if (activeRole !== "coach") {
+      return res.status(403).json({ error: "Coaches only" });
+    }
+    if (isNaN(noteId)) {
+      return res.status(400).json({ error: "Invalid note id" });
+    }
+    if (!note || typeof note !== "string" || note.trim().length === 0) {
+      return res.status(400).json({ error: "Note text is required" });
+    }
+    if (note.length > 5000) {
+      return res
+        .status(400)
+        .json({ error: "Note is too long (max 5000 character)" });
+    }
+
+    // Verify the note exists AND belongs to this coach
+    const existingNote = await CoachNote.findOne({
+      where: {
+        coach_note_id: noteId,
+        coach_user_id: coachUserId,
+      },
+    });
+
+    if (!existingNote) {
+      return res.status(400).json({
+        error: "Note not foind or you don't own this note.",
+      });
+    }
+    await existingNote.update({ note: note.trim() });
+
+    return res.json({
+      message: "Note updated",
+      note: existingNote,
+    });
+  } catch (error) {
+    console.error("udpate_note error: ", error);
+    res.status(500).json({ eror: error.message });
+  }
+};
+
+// DELETE /api/coach/notes/:noteId — coach deletes a note they own
+module.exports.delete_note = async (req, res) => {
+  try {
+    const coachUserId = req.user.user_id;
+    const noteId = parseInt(req.params.noteId);
+
+    // Mode check
+    const activeRole = req.headers["x-active-role"] || req.user.role;
+    if (activeRole !== "coach") {
+      return res.status(403).json({ error: "coaches only" });
+    }
+    if (isNaN(noteId)) {
+      return res.status(400).json({ error: "Invalid note id" });
+    }
+    // Verify the note exists AND belongs to this coach
+    const note = await CoachNote.findOne({
+      where: {
+        coach_note_id: noteId,
+        coach_user_id: coachUserId,
+      },
+    });
+    if (!note) {
+      return res.status(404).json({
+        error: "note not found or you don't own this note",
+      });
+    }
+    await note.destroy();
+    return res.json({ message: "Note deleted" });
+  } catch (error) {
+    console.error("delete_note error:", error);
     res.status(500).json({ error: error.message });
   }
 };
