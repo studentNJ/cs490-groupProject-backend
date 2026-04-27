@@ -216,74 +216,6 @@ module.exports.cancel_request = async (req, res) => {
   }
 };
 
-module.exports.get_my_coach = async (req, res) => {
-  try {
-    const clientUserId = req.user.user_id;
-
-    const activeRole = req.headers["x-active-role"] || req.user.role;
-    if (activeRole !== "client") {
-      return res
-        .status(403)
-        .json({ error: "Only clients can request coaches" });
-    }
-
-    const relationship = await ClientCoachRelationship.findOne({
-      where: {
-        client_user_id: clientUserId,
-        status: { [Op.in]: ["pending", "active"] },
-      },
-      include: [
-        {
-          model: User,
-          as: "coach",
-          attributes: ["user_id", "first_name", "last_name", "profile_pic"],
-          include: [
-            {
-              model: Coach,
-              required: true,
-              attributes: [
-                "bio",
-                "specialization",
-                "price",
-                "experience_years",
-                "is_approved",
-              ],
-            },
-          ],
-        },
-      ],
-    });
-
-    if (!relationship) {
-      return res.json({ state: "none", coach: null });
-    }
-
-    const coachUser = relationship.coach;
-    const coachProfile = coachUser.Coach;
-
-    return res.json({
-      state: relationship.status,
-      relationship_id: relationship.client_coach_relationship_id,
-      requested_at: relationship.requested_at,
-      responded_at: relationship.responded_at,
-      coach: {
-        user_id: coachUser.user_id,
-        first_name: coachUser.first_name,
-        last_name: coachUser.last_name,
-        profile_pic: coachUser.profile_pic,
-        bio: coachProfile.bio,
-        specialization: coachProfile.specialization,
-        price: coachProfile.price,
-        experience_years: coachProfile.experience_years,
-        is_approved: coachProfile.is_approved,
-      },
-    });
-  } catch (error) {
-    console.error("get_my_coach error", error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
 // /api/coach/requests - return the list of clients who've requested this coach and are waiting for approval
 module.exports.get_pending_requests = async (req, res) => {
   try {
@@ -448,40 +380,6 @@ module.exports.reject_request = async (req, res) => {
     return res.status(204).send();
   } catch (error) {
     console.error("reject_request error:", error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// DELETE /api/client/my-coach — client ends their active coaching relationship
-module.exports.unhire_coach = async (req, res) => {
-  try {
-    const clientUserId = req.user.user_id;
-
-    const activeRole = req.headers["x-active-role"] || req.user.role;
-    if (activeRole !== "client") {
-      return res.status(403).json({ error: "Clients only" });
-    }
-
-    const active = await ClientCoachRelationship.findOne({
-      where: {
-        client_user_id: clientUserId,
-        status: "active",
-      },
-    });
-
-    if (!active) {
-      return res
-        .status(404)
-        .json({ error: "You don't have an active coach to unhire" });
-    }
-
-    active.status = "inactive";
-    active.end_date = new Date().toISOString().split("T")[0];
-    await active.save();
-
-    return res.status(204).send();
-  } catch (error) {
-    console.error("unhire_coach error:", error);
     res.status(500).json({ error: error.message });
   }
 };
