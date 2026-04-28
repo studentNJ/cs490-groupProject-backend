@@ -41,6 +41,10 @@ module.exports = (sequelize, DataTypes) => {
       as: "client",
     });
 
+    WorkoutLog.belongsTo(models.Workout, {
+      foreignKey: "workout_id",
+    });
+
     WorkoutLog.hasMany(models.StrengthLogDetail, {
       foreignKey: "workout_log_id",
       as: "strengthLogs",

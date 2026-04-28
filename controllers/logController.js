@@ -83,21 +83,6 @@ module.exports.create_workout_log = async (req, res) => {
       return res.status(400).json({ error: "Date is required" });
     }
 
-    //checking if workout log already made
-    const existingLog = await WorkoutLog.findOne({
-      where: {
-        client_id: userId,
-        date: new Date(date),
-      },
-    });
-
-    if (existingLog) {
-      await t.rollback();
-      return res.status(409).json({
-        error: "Workout log already exists for this date",
-      });
-    }
-
     const workout = await Workout.findOne({
       where: {
         workout_id: workout_id,
@@ -241,8 +226,8 @@ module.exports.create_wellness_log = async (req, res) => {
 
     const existingLog = await WellnessLogs.findOne({
       where: {
-        user_id: userId,
-        date,
+        client_id: userId,
+        date: new Date(date),
       },
     });
 
