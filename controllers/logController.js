@@ -74,6 +74,7 @@ module.exports.create_workout_log = async (req, res) => {
       workout_id,
       date,
       notes,
+      duration_minutes,
       strengthLogs = [],
       cardioLogs = [],
     } = req.body;
@@ -99,6 +100,7 @@ module.exports.create_workout_log = async (req, res) => {
         client_id: userId,
         workout_id,
         date,
+        duration_minutes: duration_minutes ?? null,
         notes: notes || null,
       },
       { transaction: t }
