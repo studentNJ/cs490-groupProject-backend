@@ -7,6 +7,9 @@ const {
   AssignedWorkout,
   Exercise,
 } = require("../models");
+
+const { createNotification } = require("../services/notificationService");
+
 const { Op } = require("sequelize");
 
 module.exports.get_my_coach = async (req, res) => {
@@ -118,6 +121,19 @@ module.exports.unhire_coach = async (req, res) => {
       });
     }
 
+    try {
+      await createNotification({
+        recipient_user_id: coachUserId, // pull from the relationship row
+        actor_user_id: req.user.user_id,
+        for_role: "coach",
+        type: "client_unhired",
+        link: "/dashboard",
+        related_id: relationship.relationship_id,
+        related_type: "client_coach_relationship",
+      });
+    } catch (e) {
+      console.error("Notification (client_unhired) failed:", e);
+    }
     return res.status(204).send();
   } catch (error) {
     console.error("unhire_coach error:", error);
@@ -212,6 +228,23 @@ module.exports.complete_assignment = async (req, res) => {
     assignment.status = "completed";
     assignment.completed_at = new Date();
     await assignment.save();
+
+    try {
+      await createNotification({
+        recipient_user_id: assignment.coach_user_id,
+        actor_user_id: req.user.user_id,
+        for_role: "coach",
+        type: "workout_completed",
+        link: `/coach/clients/${req.user.user_id}`,
+        related_id: assignment.assigned_workout_id,
+        related_type: "assigned_workout",
+        context: {
+          workout_title: assignment.Workout?.title || "their workout",
+        },
+      });
+    } catch (e) {
+      console.error("Notification (workout_completed) failed:", e);
+    }
 
     return res.json({ assignment });
   } catch (error) {

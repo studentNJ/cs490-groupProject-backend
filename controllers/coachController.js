@@ -8,6 +8,9 @@ const {
   AssignedWorkout,
   CoachNote,
 } = require("../models");
+
+const { createNotification } = require("../services/notificationService");
+
 const { Op, where } = require("sequelize");
 const { stat } = require("fs");
 const { profile } = require("console");
@@ -171,6 +174,20 @@ module.exports.request_coach = async (req, res) => {
         start_date: null,
         end_date: null,
       });
+    }
+
+    try {
+      await createNotification({
+        recipient_user_id: coachUserId, // whatever variable holds the coach's id in this scope
+        actor_user_id: req.user.user_id,
+        for_role: "coach",
+        type: "coach_request_received",
+        link: "/dashboard",
+        related_id: relationship.relationship_id, // adjust to actual variable name
+        related_type: "client_coach_relationship",
+      });
+    } catch (e) {
+      console.error("Notification (coach_request_received) failed:", e);
     }
 
     return res.status(201).json({
@@ -338,6 +355,20 @@ module.exports.approve_request = async (req, res) => {
     relationship.start_date = now.toISOString().split("T")[0];
     await relationship.save();
 
+    try {
+      await createNotification({
+        recipient_user_id: parseInt(req.params.clientUserId),
+        actor_user_id: req.user.user_id,
+        for_role: "client",
+        type: "coach_request_approved",
+        link: "/dashboard",
+        related_id: relationship.relationship_id,
+        related_type: "client_coach_relationship",
+      });
+    } catch (e) {
+      console.error("Notification (coach_request_approved) failed:", e);
+    }
+
     return res.json({
       message: "Request approved",
       relationship: {
@@ -379,6 +410,20 @@ module.exports.reject_request = async (req, res) => {
         .json({ error: "No pending request from this client." });
     }
     await relationship.destroy();
+
+    try {
+      await createNotification({
+        recipient_user_id: parseInt(req.params.clientUserId),
+        actor_user_id: req.user.user_id,
+        for_role: "client",
+        type: "coach_request_rejected",
+        link: "/dashboard",
+        related_id: relationship.relationship_id,
+        related_type: "client_coach_relationship",
+      });
+    } catch (e) {
+      console.error("Notification (coach_request_approved) failed:", e);
+    }
     return res.status(204).send();
   } catch (error) {
     console.error("reject_request error:", error);
@@ -605,6 +650,20 @@ module.exports.get_client_assigned_workouts = async (req, res) => {
       offset,
     });
 
+    try {
+      await createNotification({
+        recipient_user_id: parseInt(req.params.clientUserId),
+        actor_user_id: req.user.user_id,
+        for_role: "client",
+        type: "workout_assigned",
+        link: "/dashboard",
+        related_id: newAssignment.assigned_workout_id,
+        related_type: "assigned_workout",
+        context: { workout_title: workout.title }, // workout already loaded for ownership check
+      });
+    } catch (e) {
+      console.error("Notification (workout_assigned) failed:", e);
+    }
     return res.json({
       totalItems: assignments.count,
       totalPages: Math.max(1, Math.ceil(assignments.count / limit)),

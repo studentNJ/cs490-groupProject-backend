@@ -19,6 +19,7 @@ const logRoutes = require("./routes/logRoutes");
 const coachPlanRoutes = require("./routes/coachPlanRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 const app = express();
 // Middleware to parse JSON data for all incoming requests
@@ -44,6 +45,7 @@ app.use("/survey", surveyRoutes);
 app.use("/message", messageRoutes);
 app.use("/api/workout", workoutRoutes);
 app.use("/api/coaches", coachRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/coach", coachDashboardRoutes);
 app.use("/api/client", clientRoutes);
 app.use("/api/qualifications", qualificationRoutes);
