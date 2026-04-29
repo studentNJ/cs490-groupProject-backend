@@ -74,5 +74,5 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
 
-  return Payment
+  return Payment;
 }

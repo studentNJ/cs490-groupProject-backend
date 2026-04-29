@@ -27,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
-      is_verified: {
+      is_approved: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
@@ -37,28 +37,28 @@ module.exports = (sequelize, DataTypes) => {
       tableName: "coach",
       underscored: true,
       timestamps: false, // coach table only have updated_at not craeted_at
-    },
-  )
+    }
+  );
 
   Coach.associate = (models) => {
-    Coach.belongsTo(models.User, { foreignKey: "user_id" }) // coach IS a user
+    Coach.belongsTo(models.User, { foreignKey: "user_id" }); // coach IS a user
 
     if (models.ClientCoachRelationship) {
       Coach.hasMany(models.ClientCoachRelationship, {
         foreignKey: "coach_user_id",
-      })
+      });
     }
 
     if (models.CoachQualification) {
       Coach.hasMany(models.CoachQualification, {
         foreignKey: "coach_user_id",
-      })
+      });
     }
 
     if (models.CoachCertification) {
       Coach.hasMany(models.CoachCertification, {
         foreignKey: "coach_user_id",
-      })
+      });
     }
 
     if (models.Subscription) {
@@ -85,7 +85,7 @@ module.exports = (sequelize, DataTypes) => {
     Coach.hasMany(models.Subscription, { foreignKey: "coach_id" }); // coach has many subscriptions
     Coach.hasMany(models.Payment, { foreignKey: "coach_id" })
     */
-  }
+  };
 
-  return Coach
-}
+  return Coach;
+};

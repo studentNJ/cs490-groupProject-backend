@@ -1,15 +1,19 @@
 // ─── middleware/requireRole.js ────────────────────────────────────────────────
-// Usage: router.get('/admin/...', auth, requireRole('admin'), controller)
-//        router.get('/coach/...', auth, requireRole('coach', 'admin'), controller)
+// Updated to support active role (e.g., for role-switching via X-Active-Role header)
+// Usage: router.get('/client-only', auth, requireRole('client'), controller)
+//        router.get('/coach-only', auth, requireRole('coach', 'admin'), controller)
 
 module.exports =
   (...allowedRoles) =>
   (req, res, next) => {
     if (!req.user)
-      return res.status(401).json({ message: "Not authenticated." })
+      return res.status(401).json({ message: "Not authenticated." });
 
-    if (!allowedRoles.includes(req.user.role))
-      return res.status(403).json({ message: "Access denied." })
+    // Check active role first (supports role-switching), fallback to base role
+    const activeRole = req.headers["x-active-role"] || req.user.role;
 
-    next()
-  }
+    if (!allowedRoles.includes(activeRole))
+      return res.status(403).json({ message: "Access denied." });
+
+    next();
+  };

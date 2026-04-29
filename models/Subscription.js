@@ -67,5 +67,5 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
 
-  return Subscription
+  return Subscription;
 }
