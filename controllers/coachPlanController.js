@@ -1,4 +1,81 @@
-const { CoachingPlan } = require("../models");
+const { Payment, CoachingPlan, User } = require("../models");
+const { Op, fn, col, literal } = require("sequelize");
+
+// GET /api/coach/earnings
+const getEarnings = async (req, res) => {
+  try {
+    const coachId = req.user.user_id;
+
+    const payments = await Payment.findAll({
+      where: { coach_id: coachId, payment_status: "completed" },
+      include: [
+        { model: CoachingPlan, as: "coachingPlan", attributes: ["title"] },
+        { model: User, as: "client", attributes: ["first_name", "last_name"] },
+      ],
+      order: [["created_at", "DESC"]],
+    });
+
+    const total = payments.reduce(
+      (sum, p) => sum + Number(p.payment_amount),
+      0
+    );
+
+    const now = new Date();
+    const thisMonth = payments.filter((p) => {
+      const d = new Date(p.payment_date);
+      return (
+        d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      );
+    });
+    const monthTotal = thisMonth.reduce(
+      (sum, p) => sum + Number(p.payment_amount),
+      0
+    );
+
+    const byPlan = {};
+    payments.forEach((p) => {
+      const title = p.coachingPlan?.title || "Other";
+      if (!byPlan[title]) byPlan[title] = 0;
+      byPlan[title] += Number(p.payment_amount);
+    });
+
+    const monthly = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const key = d.toLocaleString("default", {
+        month: "short",
+        year: "2-digit",
+      });
+      monthly[key] = 0;
+    }
+    payments.forEach((p) => {
+      const d = new Date(p.payment_date);
+      const key = d.toLocaleString("default", {
+        month: "short",
+        year: "2-digit",
+      });
+      if (monthly[key] !== undefined) monthly[key] += Number(p.payment_amount);
+    });
+
+    res.json({
+      total,
+      monthTotal,
+      transactionCount: payments.length,
+      byPlan: Object.entries(byPlan).map(([title, amount]) => ({
+        title,
+        amount,
+      })),
+      monthly: Object.entries(monthly).map(([month, amount]) => ({
+        month,
+        amount,
+      })),
+      recentPayments: payments.slice(0, 5),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 // GET /api/coach/plans
 const getMyPlans = async (req, res) => {
@@ -91,4 +168,10 @@ const deactivatePlan = async (req, res) => {
   }
 };
 
-module.exports = { getMyPlans, createPlan, updatePlan, deactivatePlan };
+module.exports = {
+  getMyPlans,
+  createPlan,
+  updatePlan,
+  deactivatePlan,
+  getEarnings,
+};

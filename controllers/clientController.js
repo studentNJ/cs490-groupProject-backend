@@ -88,10 +88,7 @@ module.exports.unhire_coach = async (req, res) => {
     }
 
     const active = await ClientCoachRelationship.findOne({
-      where: {
-        client_user_id: clientUserId,
-        status: "active",
-      },
+      where: { client_user_id: clientUserId, status: "active" },
     });
 
     if (!active) {
@@ -103,6 +100,23 @@ module.exports.unhire_coach = async (req, res) => {
     active.status = "inactive";
     active.end_date = new Date().toISOString().split("T")[0];
     await active.save();
+
+    // UC 6.6 — auto-cancel active subscription tied to this coach
+    const { Subscription } = require("../models");
+    const activeSub = await Subscription.findOne({
+      where: {
+        client_id: clientUserId,
+        coach_id: active.coach_user_id,
+        status: "active",
+      },
+    });
+
+    if (activeSub) {
+      await activeSub.update({
+        status: "cancelled",
+        cancelled_at: new Date(),
+      });
+    }
 
     return res.status(204).send();
   } catch (error) {
