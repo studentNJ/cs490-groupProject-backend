@@ -60,6 +60,20 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "coach_user_id",
       });
     }
+
+    if (models.Subscription) {
+      Coach.hasMany(models.Subscription, {
+        foreignKey: "coach_id",
+        sourceKey: "user_id",
+      })
+    }
+
+    if (models.Payment) {
+      Coach.hasMany(models.Payment, {
+        foreignKey: "coach_id",
+        sourceKey: "user_id",
+      })
+    }
     /*
     Coach.hasMany(models.ClientCoachRelationship, {
       foreignKey: "coach_user_id",

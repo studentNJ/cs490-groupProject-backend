@@ -1,9 +1,18 @@
-const express = require("express");
-const router = express.Router();
-const auth = require("../middleware/authMiddleware");
-const requireRole = require("../middleware/requireRole");
-const { getMyPayments } = require("../controllers/paymentController");
+const { Router } = require("express")
+const auth = require("../middleware/authMiddleware")
+const requireRole = require("../middleware/requireRole")
+const paymentController = require("../controllers/paymentController")
 
-router.get("/", auth, requireRole("client"), getMyPayments);
+const router = Router()
 
-module.exports = router;
+router.post("/", auth, paymentController.process_payment)
+router.get("/history", auth, paymentController.get_payment_history)
+router.get("/earnings", auth, paymentController.get_coach_earnings)
+router.get(
+  "/stats",
+  auth,
+  requireRole("admin"),
+  paymentController.get_payment_stats,
+)
+
+module.exports = router

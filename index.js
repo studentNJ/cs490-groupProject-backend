@@ -54,7 +54,7 @@ app.use("/uploads", express.static("uploads"));
 app.use("/api/logs", logRoutes);
 app.use("/api/coach/plans", coachPlanRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
-app.use("/api/client/payments", paymentRoutes);
+app.use("/api/payments", paymentRoutes);
 
 const server = app.listen(4000, () => {
   console.log("Server running on port 4000");

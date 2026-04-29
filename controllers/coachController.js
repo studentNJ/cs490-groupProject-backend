@@ -4,6 +4,7 @@ const {
   Client,
   Workout,
   ClientCoachRelationship,
+  Subscription,
   WorkoutLog,
   AssignedWorkout,
   CoachNote,
@@ -410,26 +411,82 @@ module.exports.reject_request = async (req, res) => {
         .json({ error: "No pending request from this client." });
     }
     await relationship.destroy();
-
     try {
-      await createNotification({
-        recipient_user_id: parseInt(req.params.clientUserId),
-        actor_user_id: req.user.user_id,
-        for_role: "client",
-        type: "coach_request_rejected",
-        link: "/dashboard",
-        related_id: relationship.relationship_id,
-        related_type: "client_coach_relationship",
-      });
+        await createNotification({
+          recipient_user_id: parseInt(req.params.clientUserId),
+          actor_user_id: req.user.user_id,
+          for_role: "client",
+          type: "coach_request_rejected",
+          link: "/dashboard",
+          related_id: relationship.relationship_id,
+          related_type: "client_coach_relationship",
+        });
     } catch (e) {
-      console.error("Notification (coach_request_approved) failed:", e);
-    }
+      console.error("Notification (coach_request_rejected) failed:", e);
+    } 
+    
     return res.status(204).send();
   } catch (error) {
     console.error("reject_request error:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
+
+// DELETE /api/client/my-coach — client ends their active coaching relationship
+module.exports.unhire_coach = async (req, res) => {
+  const transaction = await ClientCoachRelationship.sequelize.transaction();
+
+  try {
+    const clientUserId = req.user.user_id;
+
+    const activeRole = req.headers["x-active-role"] || req.user.role;
+    if (activeRole !== "client") {
+      return res.status(403).json({ error: "Clients only" });
+    }
+
+    const active = await ClientCoachRelationship.findOne({
+      where: {
+        client_user_id: clientUserId,
+        status: "active",
+      },
+      transaction,
+    });
+
+    if (!active) {
+      await transaction.rollback();
+      return res
+        .status(404)
+        .json({ error: "You don't have an active coach to unhire" });
+    }
+
+    active.status = "inactive";
+    active.end_date = new Date().toISOString().split("T")[0];
+    await active.save({ transaction });
+
+    await Subscription.update(
+      {
+        status: "cancelled",
+        cancelled_at: new Date(),
+      },
+      {
+        where: {
+          client_id: clientUserId,
+          coach_id: active.coach_user_id,
+          status: "active",
+        },
+        transaction,
+      },
+    );
+
+    await transaction.commit();
+
+    return res.status(204).send();
+  } catch (error) {
+    await transaction.rollback();
+    console.error("unhire_coach error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+ };
 
 // GET /api/coach/clients — list active clients for this coach
 module.exports.get_active_clients = async (req, res) => {

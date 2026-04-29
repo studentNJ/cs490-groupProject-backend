@@ -7,40 +7,65 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      client_id: { type: DataTypes.INTEGER, allowNull: false },
-      coach_id: { type: DataTypes.INTEGER, allowNull: false },
-      coaching_plan_id: { type: DataTypes.INTEGER, allowNull: false },
-      payment_id: { type: DataTypes.INTEGER, allowNull: false },
-      start_date: { type: DataTypes.DATEONLY, allowNull: false },
-      end_date: { type: DataTypes.DATEONLY, allowNull: false },
-      cancelled_at: DataTypes.DATE,
-      status: { type: DataTypes.STRING(20), allowNull: false }, // 'active' | 'expired' | 'cancelled'
+      client_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      coach_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      payment_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      start_date: {
+        type: DataTypes.DATEONLY,
+        allowNull: false,
+      },
+      end_date: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+      },
+      cancelled_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      status: {
+        type: DataTypes.ENUM("active", "expired", "cancelled"),
+        allowNull: false,
+        defaultValue: "active",
+      },
     },
     {
       tableName: "subscription",
-      timestamps: true,
+      underscored: true,
       createdAt: "created_at",
       updatedAt: "updated_at",
-    }
-  );
+    },
+  )
 
   Subscription.associate = (models) => {
-    Subscription.belongsTo(models.User, {
-      foreignKey: "client_id",
-      as: "client",
-    });
-    Subscription.belongsTo(models.User, {
-      foreignKey: "coach_id",
-      as: "coach",
-    });
-    Subscription.belongsTo(models.CoachingPlan, {
-      foreignKey: "coaching_plan_id",
-      as: "coachingPlan",
-    });
-    Subscription.belongsTo(models.Payment, {
-      foreignKey: "payment_id",
-      as: "payment",
-    });
-  };
+    if (models.Client) {
+      Subscription.belongsTo(models.Client, {
+        foreignKey: "client_id",
+        targetKey: "user_id",
+      })
+    }
+
+    if (models.Coach) {
+      Subscription.belongsTo(models.Coach, {
+        foreignKey: "coach_id",
+        targetKey: "user_id",
+      })
+    }
+
+    if (models.Payment) {
+      Subscription.belongsTo(models.Payment, {
+        foreignKey: "payment_id",
+      })
+    }
+  }
+
   return Subscription;
-};
+}

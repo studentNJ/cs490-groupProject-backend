@@ -68,8 +68,32 @@ module.exports = (sequelize, DataTypes) => {
       })
     }
 
-    Client.hasMany(models.WellnessLogs, { foreignKey: "user_id", sourceKey: "user_id"});
-    Client.hasMany(models.WorkoutLog, { foreignKey: "client_id" });
+    if (models.Payment) {
+      Client.hasMany(models.Payment, {
+        foreignKey: "client_id",
+        sourceKey: "user_id",
+      })
+    }
+
+    if (models.Subscription) {
+      Client.hasMany(models.Subscription, {
+        foreignKey: "client_id",
+        sourceKey: "user_id",
+      })
+    }
+
+    if (models.WellnessLogs) {
+      Client.hasMany(models.WellnessLogs, {
+        foreignKey: "user_id",
+        sourceKey: "user_id",
+      })
+    }
+
+    if (models.WorkoutLog) {
+      Client.hasMany(models.WorkoutLog, {
+        foreignKey: "client_id",
+      })
+    }
 
     /*
     Client.hasMany(models.ClientCoachRelationship, {
