@@ -17,6 +17,8 @@ router.put("/users/:id/role", adminController.changeUserRole);
 router.put("/users/:id/approve", adminController.approveRegistration);
 router.delete("/users/:id", adminController.deleteUser);
 router.get("/stats", adminController.getStats);
+router.get("/stats/user-engagement", adminController.getUserEngagement);
+router.get("/stats/revenue/daily", adminController.getDailyRevenue);
 router.get("/pending", adminController.getPendingApprovals);
 router.get("/exercises", adminController.getExercises);
 router.post("/exercises", adminController.createExercise);
