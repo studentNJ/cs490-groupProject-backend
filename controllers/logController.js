@@ -1,12 +1,15 @@
 const db = require("../models");
-const { Op } = require("sequelize");
-const Exercise = db.Exercise;
-const Workout = db.Workout;
+const { Op, fn, col, literal } = require("sequelize");
+const Exercise = db.Exercise;  
+const Workout = db.Workout; 
 const workoutExercise = db.workoutExercise;
 const WorkoutLog = db.WorkoutLog;
 const CardioLogDetail = db.CardioLogDetail;
 const StrengthLogDetail = db.StrengthLogDetail;
 const WellnessLogs = db.WellnessLogs;
+const Meal = db.Meal;
+const MealLog = db.MealLog;
+const DailyCheckin = db.DailyCheckin;
 
 module.exports.workout_logs = async (req, res) => {
   try {
@@ -205,99 +208,434 @@ module.exports.wellness_logs = async (req, res) => {
 };
 
 module.exports.create_wellness_log = async (req, res) => {
-  const t = await db.sequelize.transaction();
+    const t = await db.sequelize.transaction();
 
-  try {
-    const userId = req.user.user_id;
+    try {
+        const userId = req.user.user_id;
 
-    const { date, weight, water_intake_oz, notes } = req.body;
+        const {
+            date,
+            water_intake_oz,
+            notes,
+            steps,
+            sleep_hours
+        } = req.body;
 
-    if (!date) {
-      return res.status(400).json({ error: "Date is required" });
+        if(!date) {
+            return res.status(400).json({ error: "Date is required"})
+        };
+
+        const client = await Client.findOne({
+            where: { user_id: userId}
+        });
+
+        if (!client) {
+            return res.status(403).json({ error: "Only clients can log wellness data" });
+        }
+
+        const existingLog = await WellnessLogs.findOne({
+            where : {
+                user_id: userId,
+                date
+            }
+        });
+
+        if (existingLog) {
+            return res.status(400).json({ error: "Log already exists for this date" });
+        };
+
+        const log = await WellnessLogs.create({
+            user_id: userId,
+            date,
+            water_intake_oz,
+            notes,
+            steps,
+            sleep_hours
+        }, { transaction: t });
+
+        await t.commit();
+
+        return res.status(201).json(log);
+    } catch (err) {
+        await t.rollback()
+        return res.status(500).json({ error: err.message})
     }
-
-    const client = await Client.findOne({
-      where: { user_id: userId },
-    });
-
-    if (!client) {
-      return res
-        .status(403)
-        .json({ error: "Only clients can log wellness data" });
-    }
-
-    const existingLog = await WellnessLogs.findOne({
-      where: {
-        client_id: userId,
-        date: new Date(date),
-      },
-    });
-
-    if (existingLog) {
-      return res
-        .status(400)
-        .json({ error: "Log already exists for this date" });
-    }
-
-    const log = await WellnessLogs.create(
-      {
-        user_id: userId,
-        date,
-        weight,
-        water_intake_oz,
-        notes,
-      },
-      { transaction: t }
-    );
-
-    await t.commit();
-
-    return res.status(201).json(log);
-  } catch (err) {
-    await t.rollback();
-    return res.status(500).json({ error: err.message });
-  }
 };
 
 module.exports.edit_wellness_log = async (req, res) => {
-  try {
-    const userId = req.user.user_id;
-    const logId = req.params.id;
+    try {
+        const userId = req.user.user_id;
+        const logId = req.params.id;
 
-    const log = await WellnessLogs.findByPk(logId, {
+        const log = await WellnessLogs.findByPk(logId, {
+            include: [{
+                model: Client,
+                as: "client",
+                required: true,
+                where: { user_id: userId },
+                attributes: [],
+            }]
+        });
+
+        if (!log) {
+            return res.status(404).json({ error: "Log not found"});
+        }
+
+        const today = new Date().toISOString().slice(0, 10);
+        const logDate = new Date(log.date).toISOString().slice(0, 10);
+
+        if (today !== logDate) {
+            return res.status(403).json({ error: "Only same-day logs are editable" });
+        }
+
+        const { water_intake_oz, notes, steps, sleep_hours } = req.body;
+
+        await log.update({
+            water_intake_oz,
+            notes,
+            steps,
+            sleep_hours
+        });
+
+        return res.json(log);
+    } catch (err) {
+        return res.status(500).json({ error: err.message })
+    }
+};
+
+module.exports.create_meal_log = async (req, res) => {
+  try {
+    const { meal_id, date, servings } = req.body;
+    const user_id = req.user.user_id;
+
+    const meal = await Meal.findByPk(meal_id);
+
+    if (!meal) {
+      return res.status(404).json({ error: "Meal not found" });
+    }
+
+    const calories_consumed = meal.calories_per_serving * servings;
+
+    const log = await MealLog.create({
+      user_id,
+      meal_id,
+      date,
+      servings,
+      calories_consumed
+    });
+
+    res.status(201).json(log);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to log meal." });
+  }
+};
+
+module.exports.meal_logs = async (req, res) => {
+  try {
+    const user_id = req.user.user_id;
+    const { date } = req.query;
+
+    const where = { user_id };
+
+    if (date) {
+      where.date = date;
+    }
+
+    const logs = await MealLog.findAll({
+      where,
       include: [
         {
-          model: Client,
-          as: "client",
-          required: true,
-          where: { user_id: userId },
-          attributes: [],
-        },
+          model: Meal,
+          as: "meal"
+        }
       ],
+      order: [["date", "DESC"]]
+    });
+
+    res.json(logs);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch meal logs" })
+  }
+};
+
+module.exports.edit_meal_log = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { servings } = req.body;
+
+    const log = await MealLog.findByPk(id, {
+      include: [
+        {
+          model: Meal,
+          as: "meal"
+        }
+      ]
     });
 
     if (!log) {
       return res.status(404).json({ error: "Log not found" });
     }
 
-    const today = new Date().toISOString().slice(0, 10);
-    const logDate = new Date(log.date).toISOString().slice(0, 10);
+    log.servings = servings;
+    log.calories_consumed = log.meal.calories_per_serving * servings;
 
-    if (today !== logDate) {
-      return res.status(403).json({ error: "Only same-day logs are editable" });
+    await log.save();
+
+    res.json(log);
+
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update log" });
+  }
+};
+
+module.exports.delete_meal_log = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const log = await MealLog.findByPk(id);
+
+    if (!log) {
+      return res.status(404).json({ error: "Log Not Found" })
     }
 
-    const { weight, water_intake_oz, notes } = req.body;
+    await log.destroy();
 
-    await log.update({
-      weight,
-      water_intake_oz,
-      notes,
+    res.json({ message: "Delete successfully "});
+
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete log" });
+  }
+};
+
+module.exports.create_custom_meal_log = async (req, res) => {
+  try {
+    const {
+      name,
+      calories_per_serving,
+      servings,
+      date
+    } = req.body;
+
+    const user_id = req.user.user_id;
+
+    const meal = await Meal.create({
+      name,
+      calories_per_serving,
+      is_premade: false,
+      created_by_user_id: user_id
     });
 
-    return res.json(log);
+    const log = await MealLog.create({
+      user_id,
+      meal_id: meal.id,
+      date,
+      servings,
+      calories_consumed: calories_per_serving * servings
+    });
+
+    res.status(201).json(log);
+
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Failed to log custom meal" });
+  }
+};
+
+const { CalorieTarget, sequelize } = require("../models");
+
+module.exports.set_weekly_calorie_target = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const userId = req.user.user_id;
+    const { weekly_target } = req.body;
+
+    if (!weekly_target || isNaN(weekly_target)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: "Valid weekly_target required" });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+
+    await CalorieTarget.update(
+      { end_date: today },
+      {
+        where: {
+          user_id: userId,
+          end_date: null,
+        },
+        transaction,
+      }
+    );
+
+    const newTarget = await CalorieTarget.create(
+      {
+        user_id: userId,
+        weekly_target,
+        start_date: today,
+        end_date: null,
+      },
+      { transaction }
+    );
+
+    await transaction.commit();
+
+    return res.status(201).json({
+      message: "Weekly calorie target set successfully",
+      target: newTarget,
+    });
+  } catch (error) {
+    await transaction.rollback();
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports.upsert_daily_checkin = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+
+    const {
+      mood_level,
+      stress_level,
+      motivation_level,
+      energy_level,
+      sleep_quality,
+      body_quality,
+    } = req.body;
+
+    if (
+      !mood_level ||
+      !stress_level ||
+      !motivation_level ||
+      !energy_level ||
+      !sleep_quality ||
+      !body_quality
+    ) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+
+    const [checkin, created] = await DailyCheckin.upsert({
+      user_id: userId,
+      date: today,
+      mood_level,
+      stress_level,
+      motivation_level,
+      energy_level,
+      sleep_quality,
+      body_quality,
+    });
+
+    return res.status(200).json({
+      message: created
+        ? "Daily check-in created"
+        : "Daily check-in updated",
+      checkin,
+    });
+  } catch (error) {
+    console.error("upsert_daily_checkin error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports.get_today_checkin = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const today = new Date().toISOString().split("T")[0];
+
+    const checkin = await DailyCheckin.findOne({
+      where: {
+        user_id: userId,
+        date: today,
+      },
+    });
+
+    if (!checkin) {
+      return res.status(404).json({ error: "No check-in for today" });
+    }
+
+    return res.status(200).json({ checkin });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+// STUFF FOR GRAPHS =====================================
+const metricConfig = {
+  steps: {
+    model: WellnessLogs,
+    column: "steps",
+    aggregation: "SUM",
+  },
+  energy: {
+    model: DailyCheckin,
+    column: "energy_level",
+    aggregation: "AVG",
+  },
+  stress: {
+    model: DailyCheckin,
+    column: "stress_level",
+    aggregation: "AVG",
+  },
+  motivation: {
+    model: DailyCheckin,
+    column: "motivation_level",
+    aggregation: "AVG",
+  },
+};
+
+const getPeriodGrouping = (period) => {
+  switch (period) {
+    case "week":
+      return "YEARWEEK(date)";
+    case "month":
+      return "DATE_FORMAT(date, '%Y-%m')";
+    case "year":
+      return "YEAR(date)";
+    case "day":
+    default:
+      return "DATE(date)";
+  }
+};
+
+module.exports.get_metric = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { metric, period = "day", start, end } = req.query;
+
+    const config = metricConfig[metric];
+    if (!config) {
+      return res.status(400).json({ error: "Invalid metric" });
+    }
+
+    const groupExpr = getPeriodGrouping(period);
+
+    const results = await config.model.findAll({
+      where: {
+        user_id: userId,
+        date: {
+          [Op.between]: [start, end],
+        },
+      },
+      attributes: [
+        [literal(groupExpr), "period"],
+        [
+          fn(config.aggregation, col(config.column)),
+          "value",
+        ],
+      ],
+      group: [literal(groupExpr)],
+      order: [[literal("period"), "ASC"]],
+      raw: true,
+    });
+
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error("getMetric error:", error);
+    return res.status(500).json({ error: error.message });
   }
 };
 

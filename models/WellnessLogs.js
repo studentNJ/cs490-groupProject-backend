@@ -27,16 +27,14 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.DECIMAL(4, 2),
             },
 
-            mood_score: {
-                type: DataTypes.INTEGER,
-                validate: {
-                    min: 1,
-                    max: 5,
-                },
-            },
-
             notes: {
                 type: DataTypes.TEXT,
+            },
+
+            steps: {
+                type: DataTypes.INTEGER,
+                defaultValue: 0,
+                allowNull: false,
             },
         },
         {

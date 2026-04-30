@@ -20,6 +20,8 @@ const coachPlanRoutes = require("./routes/coachPlanRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const mealRoutes = require("./routes/mealRoutes")
+
 
 const app = express();
 
@@ -96,6 +98,8 @@ app.use("/api/logs", logRoutes);
 app.use("/api/coach/plans", coachPlanRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/meals", mealRoutes)
+
 
 const server = app.listen(4000, () => {
   console.log("Server running on port 4000");
