@@ -9,6 +9,8 @@ const {
   Exercise,
   Nutritionist,
   User,
+  CoachCertification,
+  CoachQualification
 } = require("../models")
 
 const roleModels = {
@@ -161,7 +163,12 @@ module.exports.getAllUsers = async (req, res) => {
     const { count, rows } = await User.findAndCountAll({
       where,
       attributes: userAttributes,
-      include: userIncludes,
+      include: [
+      { model: Client },
+      { model: Coach, include: [{model: CoachCertification,},{model: CoachQualification,},],},
+      { model: Nutritionist },
+      { model: Admin },
+    ],
       limit,
       offset,
       order: [["user_id", "ASC"]],
@@ -591,7 +598,10 @@ module.exports.getPendingApprovals = async (_req, res) => {
         ? User.findAll({
             where: { role: "coach" },
             attributes: userAttributes,
-            include: [{ model: Coach, where: { is_approved: false } }],
+            include: [{ model: Coach, where: { is_approved: false },
+            include: [{model: CoachCertification,},
+              {model: CoachQualification,}
+            ] }],
           })
         : Promise.resolve([]),
       shouldLoadNutritionists
