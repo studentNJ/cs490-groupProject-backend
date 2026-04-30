@@ -263,4 +263,11 @@ router.post("/calorie-target", auth, logController.set_weekly_calorie_target);
 //Graphing Logged Metrics
 router.get("/graph", auth, logController.get_metric);
 
+//Daily Check-ins
+router.put("/checkins/daily", auth, logController.upsert_daily_checkin);
+router.get("/checkins/today", auth, logController.get_today_checkin);
+
+// Weekly Calorie Target
+router.post("/calorie-target/weekly", auth, logController.set_weekly_calorie_target)
+
 module.exports = router;
