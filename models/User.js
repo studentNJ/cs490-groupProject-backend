@@ -105,6 +105,17 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
 
+    if (models.CoachReview) {
+      User.hasMany(models.CoachReview, {
+        as: "writtenCoachReviews",
+        foreignKey: "client_user_id",
+      });
+      User.hasMany(models.CoachReview, {
+        as: "receivedCoachReviews",
+        foreignKey: "coach_user_id",
+      });
+    }
+
     if (models.ClientCoachRelationship) {
       User.hasMany(models.ClientCoachRelationship, {
         as: "clientRelationships",

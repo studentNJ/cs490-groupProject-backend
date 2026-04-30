@@ -8,11 +8,11 @@
     "dev": "nodemon index.js",
     "check": "node --check index.js",
     "test": "npm run test:unit",
-    "test:unit": "node --test tests/paymentRoutes.test.js",
+    "test:unit": "node --test tests/*.test.js",
     "test:db:create": "NODE_ENV=test npx sequelize-cli db:create",
     "test:db:migrate": "NODE_ENV=test npx sequelize-cli db:migrate",
     "test:db:reset": "NODE_ENV=test npx sequelize-cli db:drop && NODE_ENV=test npx sequelize-cli db:create && NODE_ENV=test npx sequelize-cli db:migrate",
-    "test:integration": "NODE_ENV=test node --test tests/integration/*.test.js"
+    "test:integration": "NODE_ENV=test node --test --test-concurrency=1 tests/integration/*.test.js"
   },
   "repository": {
     "type": "git",
