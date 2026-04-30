@@ -16,6 +16,7 @@ const coachDashboardRoutes = require("./routes/coachDashboardRoutes")
 const qualificationRoutes = require("./routes/qualificationRoutes")
 const certificationRoutes = require("./routes/certificationRoutes")
 const logRoutes = require("./routes/logRoutes")
+const mealRoutes = require("./routes/mealRoutes")
 
 const app = express()
 // Middleware to parse JSON data for all incoming requests
@@ -47,6 +48,7 @@ app.use("/api/qualifications", qualificationRoutes)
 app.use("/api/certifications", certificationRoutes)
 app.use("/uploads", express.static("uploads"))
 app.use("/api/logs", logRoutes)
+app.use("/api/meals", mealRoutes)
 
 const server = app.listen(4000, () => {
   console.log("Server running on port 4000")
