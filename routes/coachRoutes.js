@@ -1,6 +1,8 @@
 const router = require("express").Router();
 const auth = require("../middleware/authMiddleware");
 const coachController = require("../controllers/coachController");
+const reportController = require("../controllers/reportController");
+const reviewController = require("../controllers/reviewController");
 const { getCoachPlans } = require("../controllers/subscriptionController.js");
 
 /**

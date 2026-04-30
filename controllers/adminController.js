@@ -604,11 +604,6 @@ module.exports.getUserEngagement = async (req, res) => {
 
     const users = await User.findAll({
       attributes: ["last_login"],
-      where: {
-        last_login: {
-          [Op.gte]: startDate,
-        },
-      },
     });
 
     const map = {};
@@ -618,6 +613,7 @@ module.exports.getUserEngagement = async (req, res) => {
 
       const date = new Date(u.last_login);
 
+      if (date < startDate) return;  
       let key;
 
       if (range === "monthly") {

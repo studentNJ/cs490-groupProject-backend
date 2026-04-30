@@ -3,6 +3,7 @@ const {
   Client,
   ClientCoachRelationship,
   Coach,
+  Subscription,
   Workout,
   AssignedWorkout,
   Exercise,
@@ -82,19 +83,24 @@ module.exports.get_my_coach = async (req, res) => {
 
 // DELETE /api/client/my-coach — client ends their active coaching relationship
 module.exports.unhire_coach = async (req, res) => {
+  const transaction = await ClientCoachRelationship.sequelize.transaction();
+
   try {
     const clientUserId = req.user.user_id;
 
     const activeRole = req.headers["x-active-role"] || req.user.role;
     if (activeRole !== "client") {
+      await transaction.rollback();
       return res.status(403).json({ error: "Clients only" });
     }
 
     const active = await ClientCoachRelationship.findOne({
       where: { client_user_id: clientUserId, status: "active" },
+      transaction,
     });
 
     if (!active) {
+      await transaction.rollback();
       return res
         .status(404)
         .json({ error: "You don't have an active coach to unhire" });
@@ -102,40 +108,42 @@ module.exports.unhire_coach = async (req, res) => {
 
     active.status = "inactive";
     active.end_date = new Date().toISOString().split("T")[0];
-    await active.save();
+    await active.save({ transaction });
 
-    // UC 6.6 — auto-cancel active subscription tied to this coach
-    const { Subscription } = require("../models");
-    const activeSub = await Subscription.findOne({
-      where: {
+    await Subscription.update(
+      {
+        status: "cancelled",
+        cancelled_at: new Date(),
+      },
+      {
+        where: {
         client_id: clientUserId,
         coach_id: active.coach_user_id,
         status: "active",
       },
-    });
+        transaction,
+      },
+    );
 
-    if (activeSub) {
-      await activeSub.update({
-        status: "cancelled",
-        cancelled_at: new Date(),
-      });
-    }
+    await transaction.commit();
 
     try {
       await createNotification({
-        recipient_user_id: coachUserId, // pull from the relationship row
+        recipient_user_id: active.coach_user_id,
         actor_user_id: req.user.user_id,
         for_role: "coach",
         type: "client_unhired",
         link: "/dashboard",
-        related_id: relationship.relationship_id,
+        related_id: active.client_coach_relationship_id,
         related_type: "client_coach_relationship",
       });
     } catch (e) {
       console.error("Notification (client_unhired) failed:", e);
     }
+
     return res.status(204).send();
   } catch (error) {
+    await transaction.rollback();
     console.error("unhire_coach error:", error);
     res.status(500).json({ error: error.message });
   }
