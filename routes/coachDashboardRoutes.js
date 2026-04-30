@@ -72,5 +72,6 @@ router.post(
 // Notes — edit + delete (use noteId, ownership checked in controller)
 router.patch("/notes/:noteId", auth, coachController.update_note);
 router.delete("/notes/:noteId", auth, coachController.delete_note);
+router.delete("/clients/:clientUserId", auth, coachController.drop_client);
 
 module.exports = router;

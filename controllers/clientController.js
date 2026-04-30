@@ -208,7 +208,7 @@ module.exports.complete_assignment = async (req, res) => {
     const assignmentId = parseInt(req.params.assignmentId);
 
     if (isNaN(assignmentId)) {
-      return res.status(400).json({ error: "Invalid assignmnet ID" });
+      return res.status(400).json({ error: "Invalid assignment ID" });
     }
 
     const assignment = await AssignedWorkout.findOne({
@@ -216,6 +216,7 @@ module.exports.complete_assignment = async (req, res) => {
         assigned_workout_id: assignmentId,
         client_user_id: clientUserId,
       },
+      include: [{ model: Workout, attributes: ["title"] }],
     });
     if (!assignment) {
       return res.status(404).json({ error: "Assignment not found" });
@@ -235,7 +236,7 @@ module.exports.complete_assignment = async (req, res) => {
         actor_user_id: req.user.user_id,
         for_role: "coach",
         type: "workout_completed",
-        link: `/coach/clients/${req.user.user_id}`,
+        link: `/coach/client/${req.user.user_id}`,
         related_id: assignment.assigned_workout_id,
         related_type: "assigned_workout",
         context: {

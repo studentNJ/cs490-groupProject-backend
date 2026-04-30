@@ -25,6 +25,10 @@ const TEMPLATES = {
     title: "Client ended coaching",
     body: `${actorName} is no longer working with you`,
   }),
+  coach_dropped_client: ({ actorName }) => ({
+    title: "Coaching relationship ended",
+    body: `${actorName} ended your coaching relationship`,
+  }),
 };
 
 async function createNotification({
