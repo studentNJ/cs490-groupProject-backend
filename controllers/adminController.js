@@ -585,6 +585,94 @@ module.exports.getStats = async (_req, res) => {
   }
 }
 
+module.exports.getUserEngagement = async (req, res) => {
+  try {
+    const range = req.query.range || "weekly";
+
+    const now = new Date();
+    let startDate = new Date();
+
+    if (range === "daily") {
+      startDate.setDate(now.getDate() - 1);
+    } else if (range === "weekly") {
+      startDate.setDate(now.getDate() - 7);
+    } else if (range === "monthly") {
+      startDate.setMonth(now.getMonth() - 1);
+    } else {
+      startDate.setDate(now.getDate() - 7);
+    }
+
+    const users = await User.findAll({
+      attributes: ["last_login"],
+      where: {
+        last_login: {
+          [Op.gte]: startDate,
+        },
+      },
+    });
+
+    const map = {};
+
+    users.forEach((u) => {
+      if (!u.last_login) return;
+
+      const date = new Date(u.last_login);
+
+      let key;
+
+      if (range === "monthly") {
+        key = `${date.getFullYear()}-${date.getMonth() + 1}`;
+      } else {
+        key = date.toISOString().split("T")[0]; // YYYY-MM-DD
+      }
+
+      map[key] = (map[key] || 0) + 1;
+    });
+
+    const labels = Object.keys(map).sort();
+    const values = labels.map((l) => map[l]);
+
+    return res.json({
+      labels,
+      active_users: values,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports.getDailyRevenue = async (req, res) => {
+  try {
+    const payments = await Payment.findAll({
+      attributes: ["payment_amount", "created_at"],
+      where: {
+        payment_status: "completed",
+      },
+    });
+
+    const map = {};
+
+    payments.forEach((p) => {
+      const date = new Date(p.created_at)
+        .toISOString()
+        .split("T")[0]; 
+
+      map[date] = (map[date] || 0) + Number(p.payment_amount);
+    });
+
+    const result = Object.keys(map)
+      .sort()
+      .map((date) => ({
+        date,
+        revenue: map[date],
+      }));
+
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports.getPendingApprovals = async (_req, res) => {
   try {
     const { limit, offset, page } = parsePagination(_req.query)
