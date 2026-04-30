@@ -297,7 +297,7 @@ module.exports.edit_wellness_log = async (req, res) => {
             return res.status(403).json({ error: "Only same-day logs are editable" });
         }
 
-        const { water_intake_oz, notes, sleep_hours } = req.body;
+        const { water_intake_oz, notes, steps, sleep_hours } = req.body;
 
         await log.update({
             water_intake_oz,
