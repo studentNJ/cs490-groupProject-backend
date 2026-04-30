@@ -223,7 +223,8 @@ module.exports.create_wellness_log = async (req, res) => {
             date,
             weight,
             water_intake_oz,
-            notes
+            notes,
+            steps
         } = req.body;
 
         if(!date) {
@@ -255,6 +256,7 @@ module.exports.create_wellness_log = async (req, res) => {
             weight,
             water_intake_oz,
             notes,
+            steps,
         }, { transaction: t });
 
         await t.commit();
@@ -292,12 +294,13 @@ module.exports.edit_wellness_log = async (req, res) => {
             return res.status(403).json({ error: "Only same-day logs are editable" });
         }
 
-        const { weight, water_intake_oz, notes } = req.body;
+        const { weight, water_intake_oz, notes, steps } = req.body;
 
         await log.update({
             weight,
             water_intake_oz,
             notes,
+            steps,
         });
 
         return res.json(log);

@@ -38,6 +38,12 @@ module.exports = (sequelize, DataTypes) => {
             notes: {
                 type: DataTypes.TEXT,
             },
+
+            steps: {
+                type: DataTypes.INTEGER,
+                defaultValue: 0,
+                allowNull: false,
+            },
         },
         {
             tableName: "wellness_logs",

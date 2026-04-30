@@ -12,6 +12,7 @@ router.get("/wellness-check", auth, logController.wellness_logs);
 router.post("/wellness-check", auth, logController.create_wellness_log);
 router.put("/wellness-check/:id", auth, logController.edit_wellness_log);
 router.delete("/wellness-log/:id", auth, logController.delete_wellness_log);
+
 //Meals
 //router.get("/meal-log", auth, logController.meal_logs);
 //router.post("/meal-logs", auth, logController.create_meal_log);
