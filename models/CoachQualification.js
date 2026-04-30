@@ -32,7 +32,7 @@ module.exports = (sequalize, DataTypes) => { //model for coach qualification
         
     },
     {
-        tableName: "coach_certification",
+        tableName: "coach_qualification",
         underscored:true,
         timestamps: true,
     }
