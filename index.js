@@ -22,6 +22,47 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 
 const app = express();
+
+// Swagger
+const swaggerUi = require("swagger-ui-express");
+const swaggerJsdoc = require("swagger-jsdoc");
+
+const swaggerSpec = swaggerJsdoc({
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Fitness API",
+      version: "1.0.0",
+    },
+    servers: [{ url: "http://localhost:4000" }],
+    components: {
+      securitySchemes: {
+        bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+      },
+      schemas: {
+        AuthResponse: {
+          type: "object",
+          properties: {
+            message: { type: "string" },
+            token: { type: "string" },
+            user: { type: "object" },
+          },
+        },
+        ErrorResponse: {
+          type: "object",
+          properties: {
+            message: { type: "string" },
+            error: { type: "string" },
+          },
+        },
+      },
+    },
+  },
+  apis: ["./routes/*.js"],
+});
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Middleware to parse JSON data for all incoming requests
 app.use(
   cors({
