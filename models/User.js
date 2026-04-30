@@ -71,49 +71,60 @@ module.exports = (sequelize, DataTypes) => {
     {
       tableName: "users",
       underscored: true,
-    },
-  )
+    }
+  );
 
   // Associations
   User.associate = (models) => {
     // One to One Relationship
-    User.hasOne(models.Client, { foreignKey: "user_id" })
-    User.hasOne(models.Coach, { foreignKey: "user_id" })
-    User.hasOne(models.Nutritionist, { foreignKey: "user_id" })
-    User.hasOne(models.Admin, { foreignKey: "user_id" })
+    User.hasOne(models.Client, { foreignKey: "user_id" });
+    User.hasOne(models.Coach, { foreignKey: "user_id" });
+    User.hasOne(models.Nutritionist, { foreignKey: "user_id" });
+    User.hasOne(models.Admin, { foreignKey: "user_id" });
     User.hasMany(models.AdminAuditLog, {
       as: "adminActions",
       foreignKey: "actor_user_id",
-    })
+    });
     User.hasMany(models.AdminAuditLog, {
       as: "adminTargets",
       foreignKey: "target_user_id",
-    })
+    });
 
     if (models.CoachReport) {
       User.hasMany(models.CoachReport, {
         as: "submittedCoachReports",
         foreignKey: "reporter_user_id",
-      })
+      });
       User.hasMany(models.CoachReport, {
         as: "receivedCoachReports",
         foreignKey: "coach_user_id",
-      })
+      });
       User.hasMany(models.CoachReport, {
         as: "reviewedCoachReports",
         foreignKey: "admin_reviewed_by_user_id",
-      })
+      });
+    }
+
+    if (models.CoachReview) {
+      User.hasMany(models.CoachReview, {
+        as: "writtenCoachReviews",
+        foreignKey: "client_user_id",
+      });
+      User.hasMany(models.CoachReview, {
+        as: "receivedCoachReviews",
+        foreignKey: "coach_user_id",
+      });
     }
 
     if (models.ClientCoachRelationship) {
       User.hasMany(models.ClientCoachRelationship, {
         as: "clientRelationships",
         foreignKey: "client_user_id",
-      })
+      });
       User.hasMany(models.ClientCoachRelationship, {
         as: "coachRelationships",
         foreignKey: "coach_user_id",
-      })
+      });
     }
 
     User.hasMany(models.Meal, {
@@ -136,6 +147,8 @@ module.exports = (sequelize, DataTypes) => {
       as: "mealLogs"
     });
 
+    User.hasMany(models.CoachingPlan, { foreignKey: "coach_id", as: "plans" });
+    User.hasMany(models.Payment, { foreignKey: "client_id", as: "payments" });
     /*
     // things user creates
     User.hasMany(models.Workout, { foreignKey: "created_by_user_id" })
@@ -148,6 +161,6 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "to_id",
     })
     */
-  }
-  return User
-}
+  };
+  return User;
+};

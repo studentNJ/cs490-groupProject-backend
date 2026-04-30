@@ -1,57 +1,108 @@
-require("dotenv").config()
-const cors = require("cors")
-const express = require("express")
-const sequelize = require("./config/database")
-const { initSocket } = require("./socket")
+require("dotenv").config();
+const cors = require("cors");
+const express = require("express");
+const sequelize = require("./config/database");
+const { initSocket } = require("./socket");
 
-const authRoutes = require("./routes/authRoutes")
-const adminRoutes = require("./routes/adminRoutes")
-const profileRoutes = require("./routes/profileRoutes")
-const surveyRoutes = require("./routes/surveyRoutes")
-const messageRoutes = require("./routes/messageRoutes")
-const coachRoutes = require("./routes/coachRoutes")
-const clientRoutes = require("./routes/clientRoutes")
-const workoutRoutes = require("./routes/workoutRoutes")
-const coachDashboardRoutes = require("./routes/coachDashboardRoutes")
-const qualificationRoutes = require("./routes/qualificationRoutes")
-const certificationRoutes = require("./routes/certificationRoutes")
-const logRoutes = require("./routes/logRoutes")
+const authRoutes = require("./routes/authRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const profileRoutes = require("./routes/profileRoutes");
+const surveyRoutes = require("./routes/surveyRoutes");
+const messageRoutes = require("./routes/messageRoutes");
+const coachRoutes = require("./routes/coachRoutes");
+const clientRoutes = require("./routes/clientRoutes");
+const workoutRoutes = require("./routes/workoutRoutes");
+const coachDashboardRoutes = require("./routes/coachDashboardRoutes");
+const qualificationRoutes = require("./routes/qualificationRoutes");
+const certificationRoutes = require("./routes/certificationRoutes");
+const logRoutes = require("./routes/logRoutes");
+const coachPlanRoutes = require("./routes/coachPlanRoutes");
+const subscriptionRoutes = require("./routes/subscriptionRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const mealRoutes = require("./routes/mealRoutes")
 
-const app = express()
+
+const app = express();
+
+// Swagger
+const swaggerUi = require("swagger-ui-express");
+const swaggerJsdoc = require("swagger-jsdoc");
+
+const swaggerSpec = swaggerJsdoc({
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Fitness API",
+      version: "1.0.0",
+    },
+    servers: [{ url: "http://localhost:4000" }],
+    components: {
+      securitySchemes: {
+        bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+      },
+      schemas: {
+        AuthResponse: {
+          type: "object",
+          properties: {
+            message: { type: "string" },
+            token: { type: "string" },
+            user: { type: "object" },
+          },
+        },
+        ErrorResponse: {
+          type: "object",
+          properties: {
+            message: { type: "string" },
+            error: { type: "string" },
+          },
+        },
+      },
+    },
+  },
+  apis: ["./routes/*.js"],
+});
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Middleware to parse JSON data for all incoming requests
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || true,
     credentials: true,
-  }),
-)
-app.use(express.json())
+  })
+);
+app.use(express.json());
 
 sequelize
   .authenticate()
   .then(() => console.log("Database connected"))
-  .catch((err) => console.error("DB error:", err))
+  .catch((err) => console.error("DB error:", err));
 
-app.use("/auth", authRoutes)
-app.use("/admin", adminRoutes)
-app.use("/api/survey", surveyRoutes)
-app.use("/api/profile", profileRoutes)
-app.use("/profile", profileRoutes)
-app.use("/survey", surveyRoutes)
-app.use("/message", messageRoutes)
-app.use("/api/workout", workoutRoutes)
-app.use("/api/coaches", coachRoutes)
-app.use("/api/coach", coachDashboardRoutes)
-app.use("/api/client", clientRoutes)
-app.use("/api/qualifications", qualificationRoutes)
-app.use("/api/certifications", certificationRoutes)
-app.use("/uploads", express.static("uploads"))
-app.use("/api/logs", logRoutes)
+app.use("/auth", authRoutes);
+app.use("/admin", adminRoutes);
+app.use("/api/survey", surveyRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/profile", profileRoutes);
+app.use("/survey", surveyRoutes);
+app.use("/message", messageRoutes);
+app.use("/api/workout", workoutRoutes);
+app.use("/api/coaches", coachRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/coach", coachDashboardRoutes);
+app.use("/api/client", clientRoutes);
+app.use("/api/qualifications", qualificationRoutes);
+app.use("/api/certifications", certificationRoutes);
+app.use("/uploads", express.static("uploads"));
+app.use("/api/logs", logRoutes);
+app.use("/api/coach/plans", coachPlanRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/payments", paymentRoutes);
 app.use("/api/meals", mealRoutes)
 
-const server = app.listen(4000, () => {
-  console.log("Server running on port 4000")
-})
 
-initSocket(server)
+const server = app.listen(4000, () => {
+  console.log("Server running on port 4000");
+});
+
+initSocket(server);

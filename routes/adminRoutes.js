@@ -1,30 +1,35 @@
-const { Router } = require("express")
-const adminController = require("../controllers/adminController")
-const auth = require("../middleware/authMiddleware")
-const requireRole = require("../middleware/requireRole")
+const { Router } = require("express");
+const adminController = require("../controllers/adminController");
+const auth = require("../middleware/authMiddleware");
+const requireRole = require("../middleware/requireRole");
 
-const router = Router()
+const router = Router();
 
-router.use(auth, requireRole("admin"))
+router.use(auth, requireRole("admin"));
 
-router.post("/admins", adminController.createAdmin)
-router.get("/audit-logs", adminController.getAuditLogs)
-router.get("/users", adminController.getAllUsers)
-router.get("/users/:id", adminController.getUserById)
-router.get("/users/:id/audit-logs", adminController.getUserAuditLogs)
-router.put("/users/:id/status", adminController.setUserStatus)
-router.put("/users/:id/role", adminController.changeUserRole)
-router.put("/users/:id/approve", adminController.approveRegistration)
-router.delete("/users/:id", adminController.deleteUser)
-router.get("/stats", adminController.getStats)
-router.get("/pending", adminController.getPendingApprovals)
-router.get("/exercises", adminController.getExercises)
-router.post("/exercises", adminController.createExercise)
-router.put("/exercises/:id", adminController.updateExercise)
-router.delete("/exercises/:id", adminController.deleteExercise)
-router.put("/exercises/:id/reactivate", adminController.reactivateExercise)
-router.get("/reports/coach", adminController.getCoachReports)
-router.get("/reports/coach/:id", adminController.getCoachReportById)
-router.put("/reports/coach/:id/status", adminController.updateCoachReportStatus)
+router.post("/admins", adminController.createAdmin);
+router.get("/audit-logs", adminController.getAuditLogs);
+router.get("/users", adminController.getAllUsers);
+router.get("/users/:id", adminController.getUserById);
+router.get("/users/:id/audit-logs", adminController.getUserAuditLogs);
+router.put("/users/:id/status", adminController.setUserStatus);
+router.put("/users/:id/role", adminController.changeUserRole);
+router.put("/users/:id/approve", adminController.approveRegistration);
+router.delete("/users/:id", adminController.deleteUser);
+router.get("/stats", adminController.getStats);
+router.get("/stats/user-engagement", adminController.getUserEngagement);
+router.get("/stats/revenue/daily", adminController.getDailyRevenue);
+router.get("/pending", adminController.getPendingApprovals);
+router.get("/exercises", adminController.getExercises);
+router.post("/exercises", adminController.createExercise);
+router.put("/exercises/:id", adminController.updateExercise);
+router.delete("/exercises/:id", adminController.deleteExercise);
+router.put("/exercises/:id/reactivate", adminController.reactivateExercise);
+router.get("/reports/coach", adminController.getCoachReports);
+router.get("/reports/coach/:id", adminController.getCoachReportById);
+router.put(
+  "/reports/coach/:id/status",
+  adminController.updateCoachReportStatus
+);
 
-module.exports = router
+module.exports = router;
