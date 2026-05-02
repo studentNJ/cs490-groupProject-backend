@@ -21,6 +21,7 @@ const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const mealRoutes = require("./routes/mealRoutes")
+const calendarRoutes = require("./routes/calendarRoutes")
 
 
 const app = express();
@@ -99,6 +100,7 @@ app.use("/api/coach/plans", coachPlanRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/meals", mealRoutes)
+app.use("/api/calendar", calendarRoutes)
 
 
 const server = app.listen(4000, () => {
