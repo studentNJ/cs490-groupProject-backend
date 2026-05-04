@@ -29,6 +29,10 @@ const TEMPLATES = {
     title: "Coaching relationship ended",
     body: `${actorName} ended your coaching relationship`,
   }),
+  progress_photo_uploaded: ({ actorName }) => ({
+    title: "New progress photo",
+    body: `${actorName} uploaded a new progress photo`,
+  }),
 };
 
 async function createNotification({
