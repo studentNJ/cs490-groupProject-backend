@@ -23,15 +23,15 @@ const TEMPLATES = {
   }),
   client_unhired: ({ actorName }) => ({
     title: "Client ended coaching",
-    body: `${actorName} is no longer working with you`,
+    body: `${actorName} is no longer working with you.`,
   }),
   coach_dropped_client: ({ actorName }) => ({
     title: "Coaching relationship ended",
-    body: `${actorName} ended your coaching relationship`,
+    body: `${actorName} ended your coaching relationship.`,
   }),
   progress_photo_uploaded: ({ actorName }) => ({
     title: "New progress photo",
-    body: `${actorName} uploaded a new progress photo`,
+    body: `${actorName} uploaded a new progress photo.`,
   }),
 };
 
