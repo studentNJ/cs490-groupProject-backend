@@ -1,4 +1,10 @@
-const { User, Client, Coach } = require("../models")
+const {
+  User,
+  Client,
+  Coach,
+  CoachQualification,
+  CoachCertification,
+} = require("../models")
 
 module.exports.update_client_profile = async (req, res) => {
   try {
@@ -61,8 +67,19 @@ module.exports.update_coach_profile = async (req, res) => {
       bio,
       experience_years,
       specialization,
+      specializations,
       price,
+      pricing,
     } = req.body
+
+    const nextSpecialization =
+      specializations !== undefined
+        ? Array.isArray(specializations)
+          ? specializations.join(", ")
+          : specializations
+        : specialization
+
+    const nextPrice = pricing !== undefined ? pricing : price
 
     const user = await User.findByPk(user_id)
     if (!user) return res.status(404).json({ message: "User is not found!" })
@@ -88,8 +105,10 @@ module.exports.update_coach_profile = async (req, res) => {
             ? parseInt(experience_years)
             : coach.experience_years,
         specialization:
-          specialization !== undefined ? specialization : coach.specialization,
-        price: price !== undefined ? price : coach.price,
+          nextSpecialization !== undefined
+            ? nextSpecialization
+            : coach.specialization,
+        price: nextPrice !== undefined ? nextPrice : coach.price,
       })
     }
     res.status(200).json({
@@ -133,6 +152,12 @@ module.exports.get_coach_profile = async (req, res) => {
     })
 
     const coach = await Coach.findByPk(user_id)
+    const qualifications = await CoachQualification.findAll({
+      where: { user_id },
+    })
+    const certifications = await CoachCertification.findAll({
+      where: { coach_user_id: user_id },
+    })
 
     if (!user || !coach) {
       return res.status(404).json({ message: "Coach not found" })
@@ -146,6 +171,8 @@ module.exports.get_coach_profile = async (req, res) => {
         specialization: coach.specialization,
         price: coach.price,
         is_approved: coach.is_approved,
+        qualifications,
+        certifications,
       },
     })
   } catch (err) {

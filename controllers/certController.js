@@ -3,10 +3,14 @@ const { CoachCertification } = require("../models");
 module.exports.add_certification = async (req, res) => {
   //add certification, default pending
   try {
-    const coach_id = req.user.user_id;
+    const coach_user_id = req.user.user_id;
+    if (!req.file) {
+      return res.status(400).json({ message: "Certification document is required" });
+    }
+
     const certification = await CoachCertification.create({
-      coach_id,
-      document_url: req.file.filename,
+      coach_user_id,
+      document_url: `/uploads/${req.file.filename}`,
       status: "pending",
     });
 
@@ -23,7 +27,10 @@ module.exports.verify_certification = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    await CoachCertification.update({ status }, { where: { id } });
+    await CoachCertification.update(
+      { status },
+      { where: { certification_id: id } }
+    );
     res.json({ message: `Certification is ${status}` });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -32,9 +39,9 @@ module.exports.verify_certification = async (req, res) => {
 
 module.exports.get_certification = async (req, res) => {
   try {
-    const coach_id = req.user.user_id;
+    const coach_user_id = req.user.user_id;
     const certs = await CoachCertification.findAll({
-      where: { coach_id },
+      where: { coach_user_id },
     });
 
     res.json(certs);

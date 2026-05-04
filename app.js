@@ -23,41 +23,51 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const app = express();
 
 // Swagger
-const swaggerUi = require("swagger-ui-express");
-const swaggerJsdoc = require("swagger-jsdoc");
+let swaggerUi;
+let swaggerJsdoc;
 
-const swaggerSpec = swaggerJsdoc({
-  definition: {
-    openapi: "3.0.0",
-    info: { title: "Fitness API", version: "1.0.0" },
-    servers: [{ url: "http://localhost:4000" }],
-    components: {
-      securitySchemes: {
-        bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
-      },
-      schemas: {
-        AuthResponse: {
-          type: "object",
-          properties: {
-            message: { type: "string" },
-            token: { type: "string" },
-            user: { type: "object" },
-          },
+try {
+  swaggerUi = require("swagger-ui-express");
+  swaggerJsdoc = require("swagger-jsdoc");
+} catch (err) {
+  swaggerUi = null;
+  swaggerJsdoc = null;
+}
+
+if (swaggerUi && swaggerJsdoc) {
+  const swaggerSpec = swaggerJsdoc({
+    definition: {
+      openapi: "3.0.0",
+      info: { title: "Fitness API", version: "1.0.0" },
+      servers: [{ url: "http://localhost:4000" }],
+      components: {
+        securitySchemes: {
+          bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
         },
-        ErrorResponse: {
-          type: "object",
-          properties: {
-            message: { type: "string" },
-            error: { type: "string" },
+        schemas: {
+          AuthResponse: {
+            type: "object",
+            properties: {
+              message: { type: "string" },
+              token: { type: "string" },
+              user: { type: "object" },
+            },
+          },
+          ErrorResponse: {
+            type: "object",
+            properties: {
+              message: { type: "string" },
+              error: { type: "string" },
+            },
           },
         },
       },
     },
-  },
-  apis: ["./routes/*.js"],
-});
+    apis: ["./routes/*.js"],
+  });
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}
 app.use(cors({ origin: process.env.FRONTEND_URL || true, credentials: true }));
 app.use(express.json());
 
