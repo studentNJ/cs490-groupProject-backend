@@ -252,5 +252,22 @@ router.put("/wellness-check/:id", auth, logController.edit_wellness_log);
  *         $ref: '#/components/schemas/ErrorResponse'
  */
 router.delete("/wellness-log/:id", auth, logController.delete_wellness_log);
+//Meals
+router.get("/meal-log", auth, logController.meal_logs);
+router.post("/meal-log", auth, logController.create_meal_log);
+router.put("/meal-log/:id", auth, logController.edit_meal_log);
+router.delete("/meal-log/:id", auth, logController.delete_meal_log);
+router.post("/meal-log/custom", auth, logController.create_custom_meal_log);
+router.post("/calorie-target", auth, logController.set_weekly_calorie_target);
+
+//Graphing Logged Metrics
+router.get("/graph", auth, logController.get_metric);
+
+//Daily Check-ins
+router.put("/checkins/daily", auth, logController.upsert_daily_checkin);
+router.get("/checkins/today", auth, logController.get_today_checkin);
+
+// Weekly Calorie Target
+router.post("/calorie-target/weekly", auth, logController.set_weekly_calorie_target)
 
 module.exports = router;

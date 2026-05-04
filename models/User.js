@@ -127,13 +127,31 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
 
+    User.hasMany(models.Meal, {
+      foreignKey: "created_by_user_id",
+      as: "meals"
+    });
+
+    User.hasMany(models.MealPlan, {
+      foreignKey: "created_by_user_id",
+      as: "createdMealPlans"
+    });
+
+    User.hasMany(models.MealPlan, {
+      foreignKey: "client_id",
+      as: "assignedMealPlans"
+    });
+
+    User.hasMany(models.MealLog, {
+      foreignKey: "user_id",
+      as: "mealLogs"
+    });
+
     User.hasMany(models.CoachingPlan, { foreignKey: "coach_id", as: "plans" });
     User.hasMany(models.Payment, { foreignKey: "client_id", as: "payments" });
     /*
     // things user creates
     User.hasMany(models.Workout, { foreignKey: "created_by_user_id" })
-    User.hasMany(models.Meal, { foreignKey: "created_by_user_id" })
-    User.hasMany(models.MealPlan, { foreignKey: "created_by_user_id" })
     User.hasMany(models.WorkoutPlan, { foreignKey: "created_by_user_id" })
 
     // messaging
