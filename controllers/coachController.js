@@ -8,6 +8,7 @@ const {
   WorkoutLog,
   AssignedWorkout,
   CoachNote,
+  ProgressPhoto,
 } = require("../models");
 
 const { createNotification } = require("../services/notificationService");
@@ -1077,5 +1078,80 @@ module.exports.drop_client = async (req, res) => {
     await transaction.rollback();
     console.error("drop_client error:", error);
     return res.status(500).json({ error: error.message });
+  }
+};
+
+// GET /api/coach/clients/:clientUserId/photos — list this client's progress photos
+// GET /api/coach/clients/:clientUserId/photos
+// Query params: page, limit, from_date, to_date
+module.exports.get_client_photos = async (req, res) => {
+  try {
+    const clientUserId = req.client.user_id;
+
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 12));
+    const offset = (page - 1) * limit;
+
+    const { from_date, to_date } = req.query;
+    const where = { user_id: clientUserId };
+
+    // Date range filter on taken_date, falling back to created_at if taken_date is null
+    const dateConditions = [];
+    if (from_date) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(from_date)) {
+        return res.status(400).json({ error: "from_date must be YYYY-MM-DD" });
+      }
+      dateConditions.push({
+        [Op.or]: [
+          { taken_date: { [Op.gte]: from_date } },
+          {
+            [Op.and]: [
+              { taken_date: null },
+              { created_at: { [Op.gte]: `${from_date} 00:00:00` } },
+            ],
+          },
+        ],
+      });
+    }
+    if (to_date) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(to_date)) {
+        return res.status(400).json({ error: "to_date must be YYYY-MM-DD" });
+      }
+      dateConditions.push({
+        [Op.or]: [
+          { taken_date: { [Op.lte]: to_date } },
+          {
+            [Op.and]: [
+              { taken_date: null },
+              { created_at: { [Op.lte]: `${to_date} 23:59:59` } },
+            ],
+          },
+        ],
+      });
+    }
+    if (dateConditions.length > 0) {
+      where[Op.and] = dateConditions;
+    }
+
+    const result = await ProgressPhoto.findAndCountAll({
+      where,
+      order: [
+        ["taken_date", "DESC"],
+        ["created_at", "DESC"],
+      ],
+      limit,
+      offset,
+    });
+
+    return res.json({
+      data: result.rows,
+      totalItems: result.count,
+      totalPages: Math.max(1, Math.ceil(result.count / limit)),
+      currentPage: page,
+      limit,
+    });
+  } catch (err) {
+    console.error("get_client_photos error:", err);
+    res.status(500).json({ error: err.message });
   }
 };

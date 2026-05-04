@@ -3,7 +3,6 @@ const router = express.Router();
 const coachController = require("../controllers/coachController");
 const auth = require("../middleware/authMiddleware");
 const requireActiveCoachRelationship = require("../middleware/requireActiveCoachRelationship");
-
 /**
  * @swagger
  * tags:
@@ -218,5 +217,33 @@ router.delete("/notes/:noteId", auth, coachController.delete_note);
  *       - bearerAuth: []
  */
 router.delete("/clients/:clientUserId", auth, coachController.drop_client);
+
+/**
+ * @swagger
+ * /api/coach/clients/{clientUserId}/photos:
+ *   get:
+ *     summary: Get client progress photos
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: clientUserId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: List of progress photos
+ *       403:
+ *         description: No active relationship
+ *       500:
+ *         description: Server error
+ */
+router.get(
+  "/clients/:clientUserId/photos",
+  auth,
+  requireActiveCoachRelationship,
+  coachController.get_client_photos
+);
 
 module.exports = router;

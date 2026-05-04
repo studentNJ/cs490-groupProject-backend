@@ -27,7 +27,8 @@ module.exports = (sequelize, DataTypes) => {
           "workout_assigned",
           "workout_completed",
           "client_unhired",
-          "coach_dropped_client"
+          "coach_dropped_client",
+          "progress_photo_uploaded"
         ),
         allowNull: false,
       },
