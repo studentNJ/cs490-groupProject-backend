@@ -10,6 +10,7 @@ const WellnessLogs = db.WellnessLogs;
 const Meal = db.Meal;
 const MealLog = db.MealLog;
 const DailyCheckin = db.DailyCheckin;
+const Client = db.Client;
 
 module.exports.workout_logs = async (req, res) => {
   try {
@@ -262,45 +263,59 @@ module.exports.create_wellness_log = async (req, res) => {
     }
 };
 
-module.exports.edit_wellness_log = async (req, res) => {
-    try {
-        const userId = req.user.user_id;
-        const logId = req.params.id;
+module.exports.upsert_wellness_today = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
 
-        const log = await WellnessLogs.findByPk(logId, {
-            include: [{
-                model: Client,
-                as: "client",
-                required: true,
-                where: { user_id: userId },
-                attributes: [],
-            }]
-        });
+    const today = new Date().toISOString().slice(0, 10);
 
-        if (!log) {
-            return res.status(404).json({ error: "Log not found"});
-        }
+    const { water_intake_oz, notes, steps, sleep_hours } = req.body;
 
-        const today = new Date().toISOString().slice(0, 10);
-        const logDate = new Date(log.date).toISOString().slice(0, 10);
+    let log = await WellnessLogs.findOne({
+      include: [
+        {
+          model: Client,
+          required: true,
+          where: { user_id: userId },
+          attributes: [],
+        },
+      ],
+      where: {
+        date: today,
+      },
+    });
 
-        if (today !== logDate) {
-            return res.status(403).json({ error: "Only same-day logs are editable" });
-        }
+    if (log) {
+      await log.update({
+        ...(water_intake_oz !== undefined && { water_intake_oz }),
+        ...(notes !== undefined && { notes }),
+        ...(steps !== undefined && { steps }),
+        ...(sleep_hours !== undefined && { sleep_hours }),
+      });
+    } else {
+      const client = await Client.findOne({
+        where: { user_id: userId },
+      });
 
-        const { water_intake_oz, notes, steps, sleep_hours } = req.body;
+      if (!client) {
+        return res.status(404).json({ error: "Client not found" });
+      }
 
-        await log.update({
-            water_intake_oz,
-            notes,
-            steps,
-            sleep_hours
-        });
-
-        return res.json(log);
-    } catch (err) {
-        return res.status(500).json({ error: err.message })
+      log = await WellnessLogs.create({
+        user_id: client.user_id,
+        date: today,
+        ...(water_intake_oz !== undefined && { water_intake_oz }),
+        ...(notes !== undefined && { notes }),
+        ...(steps !== undefined && { steps }),
+        ...(sleep_hours !== undefined && { sleep_hours }),
+      });
     }
+
+    return res.json(log);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 module.exports.create_meal_log = async (req, res) => {
@@ -351,13 +366,22 @@ module.exports.meal_logs = async (req, res) => {
           as: "meal"
         }
       ],
-      order: [["date", "DESC"]]
+      raw: true,
+      nest: true
     });
 
-    res.json(logs);
+    const formatted = logs.map(log => ({
+        date: log.date,
+        calories: log.meal?.calories,
+        protein: log.meal?.protein,
+        carbs: log.meal?.carbs,
+        fats: log.meal?.fat,
+        fiber: log.meal?.fiber,
+    }));
+
+    res.json(formatted);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch meal logs" })
+    res.status(500).json({ error: err.message })
   }
 };
 
@@ -569,22 +593,43 @@ const metricConfig = {
     model: WellnessLogs,
     column: "steps",
     aggregation: "SUM",
+    userField: "user_id",
+
   },
   energy: {
     model: DailyCheckin,
     column: "energy_level",
     aggregation: "AVG",
+    userField: "user_id",
+
   },
   stress: {
     model: DailyCheckin,
     column: "stress_level",
     aggregation: "AVG",
+    userField: "user_id",
+
   },
   motivation: {
     model: DailyCheckin,
     column: "motivation_level",
     aggregation: "AVG",
+    userField: "user_id",
+
   },
+  calories: {
+    model: MealLog,
+    column: "calories_consumed",
+    aggregation: "SUM",
+    userField: "user_id",
+
+  },
+  volume: {
+    model: WorkoutLog,
+    column: "duration_minutes",
+    aggregation: "SUM",
+    userField: "client_id",
+  }
 };
 
 const getPeriodGrouping = (period) => {
@@ -607,6 +652,8 @@ module.exports.get_metric = async (req, res) => {
     const { metric, period = "day", start, end } = req.query;
 
     const config = metricConfig[metric];
+    const userField = config.userField || "user_id";
+
     if (!config) {
       return res.status(400).json({ error: "Invalid metric" });
     }
@@ -615,7 +662,7 @@ module.exports.get_metric = async (req, res) => {
 
     const results = await config.model.findAll({
       where: {
-        user_id: userId,
+        [userField]: userId,
         date: {
           [Op.between]: [start, end],
         },
@@ -677,5 +724,89 @@ module.exports.delete_wellness_log = async (req, res) => {
   } catch (err) {
     await t.rollback();
     return res.status(500).json({ err: message });
+  }
+};
+
+module.exports.get_today_wellness = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const today = new Date().toISOString().split("T")[0];
+
+    const checkin = await WellnessLogs.findOne({
+      where: {
+        user_id: userId,
+        date: today,
+      },
+    });
+
+    if (!checkin) {
+      return res.status(404).json({ error: "No wellness log for today" });
+    }
+
+    return res.status(200).json({ checkin });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports.clear_wellness_field = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { field } = req.body;
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const log = await WellnessLogs.findOne({
+      where: {
+        user_id: userId,
+        date: today,
+      },
+    });
+
+    if (!log) {
+      return res.status(404).json({ error: "No log for today" });
+    }
+
+    const validFields = {
+      sleepHours: "sleep_hours",
+      waterCurrent: "water_intake_oz",
+      stepLog: "steps",
+    };
+
+    const dbField = validFields[field];
+
+    if (!dbField) {
+      return res.status(400).json({ error: "Invalid field" });
+    }
+
+    await log.update({
+      [dbField]: 0,
+    });
+
+    return res.json(log);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports.get_today_activity = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const today = new Date().toISOString().slice(0, 10);
+
+    const total = await WorkoutLog.sum("duration_minutes", {
+      where: {
+        client_id: userId, 
+        date: today,
+      },
+    });
+
+    return res.json({
+      totalMinutes: total || 0,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
   }
 };

@@ -114,7 +114,7 @@ router.get("/workout-log", auth, logController.workout_logs);
  *         $ref: '#/components/schemas/ErrorResponse'
  */
 router.post("/workout-log", auth, logController.create_workout_log);
-
+router.get("/workouts/today", auth, logController.get_today_activity);
 /**
  * @swagger
  * /api/logs/wellness-check:
@@ -225,7 +225,7 @@ router.post("/wellness-check", auth, logController.create_wellness_log);
  *       500:
  *         $ref: '#/components/schemas/ErrorResponse'
  */
-router.put("/wellness-check/:id", auth, logController.edit_wellness_log);
+router.post("/wellness/upsert-today", auth, logController.upsert_wellness_today);
 
 /**
  * @swagger
@@ -252,6 +252,9 @@ router.put("/wellness-check/:id", auth, logController.edit_wellness_log);
  *         $ref: '#/components/schemas/ErrorResponse'
  */
 router.delete("/wellness-log/:id", auth, logController.delete_wellness_log);
+router.get("/wellness-check/today", auth, logController.get_today_wellness);
+router.patch("/wellness/clear", auth, logController.clear_wellness_field);
+
 //Meals
 router.get("/meal-log", auth, logController.meal_logs);
 router.post("/meal-log", auth, logController.create_meal_log);
@@ -264,10 +267,10 @@ router.post("/calorie-target", auth, logController.set_weekly_calorie_target);
 router.get("/graph", auth, logController.get_metric);
 
 //Daily Check-ins
-router.put("/checkins/daily", auth, logController.upsert_daily_checkin);
+router.post("/checkins/daily", auth, logController.upsert_daily_checkin);
 router.get("/checkins/today", auth, logController.get_today_checkin);
 
 // Weekly Calorie Target
-router.post("/calorie-target/weekly", auth, logController.set_weekly_calorie_target)
+router.post("/calorie-target/weekly", auth, logController.set_weekly_calorie_target);
 
 module.exports = router;

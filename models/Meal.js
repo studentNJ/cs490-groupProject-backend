@@ -22,8 +22,6 @@ module.exports = (sequelize, DataTypes) => {
     carbs: DataTypes.FLOAT,
     fat: DataTypes.FLOAT,
 
-    image_url: DataTypes.STRING,
-
     is_premade: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
