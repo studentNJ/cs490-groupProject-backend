@@ -25,4 +25,7 @@ router.patch(
 
 router.get("/subscription", auth, requireRole("client"), getMySubscription);
 
+router.patch("/assignments/:assignmentId/accept", auth, clientController.accept_assignment);
+router.patch("/assignments/:assignmentId/decline", auth, clientController.decline_assignment);
+
 module.exports = router;
