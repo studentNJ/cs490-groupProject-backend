@@ -8,7 +8,7 @@ module.exports = (sequalize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      coach_user_id: {
+      coach_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
@@ -44,7 +44,7 @@ module.exports = (sequalize, DataTypes) => {
 
   CoachCertification.associate = (models) => {
     CoachCertification.belongsTo(models.Coach, {
-      foreignKey: "coach_user_id",
+      foreignKey: "coach_id",
       targetKey: "user_id",
     });
   };

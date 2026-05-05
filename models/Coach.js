@@ -27,11 +27,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
-      is_approved: {
+      /*is_approved: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
-      },
+      },*/
     },
     {
       tableName: "coach",
@@ -51,13 +51,13 @@ module.exports = (sequelize, DataTypes) => {
 
     if (models.CoachQualification) {
       Coach.hasMany(models.CoachQualification, {
-        foreignKey: "coach_user_id",
+        foreignKey: "coach_id",
       });
     }
 
     if (models.CoachCertification) {
       Coach.hasMany(models.CoachCertification, {
-        foreignKey: "coach_user_id",
+        foreignKey: "coach_id",
       });
     }
 

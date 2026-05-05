@@ -19,7 +19,7 @@ module.exports.add_qualification = async (req, res) => { //add qualifications
             qualification,
         });
     } catch (err){
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: err.message });
     }
 };
 
@@ -31,7 +31,7 @@ module.exports.get_qualification = async (req, res) => { //get qualifications
         });
         res.json(qualifications);
     } catch (err){
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: err.message });
     }
 };
 
@@ -43,6 +43,6 @@ module.exports.delete_qualification = async (req, res ) => {
         });
         res.json({message: "Qualification deleted successfully!"});
     } catch(err){
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: err.message });
     }
 };
