@@ -5,7 +5,7 @@ module.exports = (sequalize, DataTypes) => { //model for coach qualification
             primaryKey: true,
             autoIncrement: true,
         },
-        user_id: {
+        coach_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
         },
@@ -35,13 +35,16 @@ module.exports = (sequalize, DataTypes) => { //model for coach qualification
         tableName: "coach_qualification",
         underscored:true,
         timestamps: true,
+        createdAt: "created_at",
+        updatedAt: "updated_at",
     }
 
     );
 
     CoachQualification.associate = (models) => {
         CoachQualification.belongsTo(models.Coach, {
-            foreignKey: "coach_user_id",
+        foreignKey: "coach_id",
+        targetKey: "user_id",
         });
     };
 

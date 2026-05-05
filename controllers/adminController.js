@@ -408,7 +408,10 @@ module.exports.approveRegistration = async (req, res) => {
     }
 
     const RoleModel = roleModels[user.role]
-    const roleRecord = await RoleModel.findByPk(user.user_id, { transaction })
+    const roleRecord = await RoleModel.findOne({
+      where: {user_id: user.user_id}, 
+      transaction, });
+    console.log("roleRecord found:", roleRecord)
     if (!roleRecord) {
       await transaction.rollback()
       return res.status(404).json({ message: "Role record not found!" })
@@ -416,15 +419,18 @@ module.exports.approveRegistration = async (req, res) => {
 
     await roleRecord.update({ is_approved: approved }, { transaction })
 
-    await createAuditLog({
-      actorUserId: req.user.user_id,
-      targetUserId: user.user_id,
-      action: approved ? "user.approve" : "user.unapprove",
-      metadata: {
-        role: user.role,
-      },
-      transaction,
-    })
+    try {
+      await createAuditLog({
+        actorUserId: req.user.user_id,
+        targetUserId: user.user_id,
+        action: approved ? "user.approve" : "user.unapprove",
+        metadata: { role: user.role },
+        transaction,
+      })
+    } catch (auditErr) {
+      console.error("Audit log failed:", auditErr.message)
+    }
+
 
     await transaction.commit()
 

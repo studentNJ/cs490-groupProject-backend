@@ -398,6 +398,7 @@ CREATE TABLE `session` (
   `duration_minutes` int DEFAULT NULL,
   `status` varchar(20) NOT NULL,
   `notes` text,
+  `decline_reason` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`session_id`),
@@ -625,6 +626,27 @@ CREATE TABLE `coach_certification`(
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+/* table created for assigned workouts*/
+
+CREATE TABLE `assigned_workout` (
+  `assigned_workout_id` int NOT NULL AUTO_INCREMENT,
+  `coach_user_id` int NOT NULL,
+  `client_user_id` int NOT NULL,
+  `workout_id` int NOT NULL,
+  `assigned_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `due_date` date DEFAULT NULL,
+  `status` enum('assigned','completed','skipped') NOT NULL DEFAULT 'assigned',
+  `completed_at` datetime DEFAULT NULL,
+  `coach_notes` text DEFAULT NULL,
+  PRIMARY KEY (`assigned_workout_id`),
+  KEY `idx_aw_coach` (`coach_user_id`),
+  KEY `idx_aw_client` (`client_user_id`),
+  KEY `idx_aw_workout` (`workout_id`),
+  CONSTRAINT `fk_aw_coach` FOREIGN KEY (`coach_user_id`) REFERENCES `users` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_aw_client` FOREIGN KEY (`client_user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_aw_workout` FOREIGN KEY (`workout_id`) REFERENCES `workout` (`workout_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

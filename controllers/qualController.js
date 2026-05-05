@@ -5,7 +5,7 @@ module.exports.add_qualification = async (req, res) => { //add qualifications
         const user_id = req.user.user_id;
         const {degree_name, institution, field_of_study, year_completed} = req.body;
         if (!degree_name || !institution || !field_of_study || !year_completed){
-            return res.status(404).json({ message: "All information must be submitted" });
+            return res.status(400).json({ message: "All information must be submitted" });
         }
         const qualification = await CoachQualification.create({
             user_id,
@@ -37,11 +37,14 @@ module.exports.get_qualification = async (req, res) => { //get qualifications
 
 module.exports.delete_qualification = async (req, res ) => {
     try {
-        const user_id = req.user.user_id;
+        const coach_id = req.user.user_id;
         const {id} = req.params;
         await CoachQualification.destroy({
-            where: {qualification_id: id, user_id},
+            where: {qualification_id: id, coach_id},
         });
+        if (!deleted){
+            return res.status(404).json({error: "Qualification not found."});
+        }
         res.json({message: "Qualification deleted successfully!"});
     } catch(err){
         return res.status(500).json({ error: err.message });

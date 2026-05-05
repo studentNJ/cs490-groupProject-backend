@@ -261,3 +261,110 @@ module.exports.complete_assignment = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// client can accept assigned workout
+module.exports.accept_assignment = async (req, res) => {
+  try {
+    const clientUserId = req.user.user_id;
+    const assignmentId = parseInt(req.params.assignmentId);
+
+    if (isNaN(assignmentId)) {
+      return res.status(400).json({ error: "Invalid assignment ID" });
+    }
+
+    const assignment = await AssignedWorkout.findOne({
+      where: {
+        assigned_workout_id: assignmentId,
+        client_user_id: clientUserId,
+        status: "assigned",
+      },
+      include: [{ model: Workout, attributes: ["title"] }],
+    });
+
+    if (!assignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+
+    await assignment.update({ 
+      status: "accepted", 
+      completed_at: new Date() });
+
+    try {
+      await createNotification({
+        recipient_user_id: assignment.coach_user_id,
+        actor_user_id: clientUserId,
+        for_role: "coach",
+        type: "workout_accepted",
+        link: "/dashboard",
+        related_id: assignment.assigned_workout_id,
+        related_type: "assigned_workout",
+        context: { workout_title: assignment.Workout?.title },
+      });
+    } catch (e) {
+      console.error("Notification (workout_accepted) failed:", e);
+    }
+
+    return res.json({ message: "Workout accepted." });
+  } catch (error) {
+    console.error("accept_assignment error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// client can decline assigned workout
+module.exports.decline_assignment = async (req, res) => {
+  try {
+    const clientUserId = req.user.user_id;
+    const assignmentId = parseInt(req.params.assignmentId);
+    const { decline_reason } = req.body;
+
+    if (isNaN(assignmentId)) {
+      return res.status(400).json({ error: "Invalid assignment ID" });
+    }
+
+    if (!decline_reason || !decline_reason.trim()) {
+      return res.status(400).json({ error: "decline_reason is required" });
+    }
+
+    const assignment = await AssignedWorkout.findOne({
+      where: {
+        assigned_workout_id: assignmentId,
+        client_user_id: clientUserId,
+        status: "assigned",
+      },
+      include: [{ model: Workout, attributes: ["title"] }],
+    });
+
+    if (!assignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+
+    await assignment.update({
+      status: "declined",
+      decline_reason: decline_reason.trim(),
+    });
+
+    try {
+      await createNotification({
+        recipient_user_id: assignment.coach_user_id,
+        actor_user_id: clientUserId,
+        for_role: "coach",
+        type: "workout_declined",
+        link: "/dashboard",
+        related_id: assignment.assigned_workout_id,
+        related_type: "assigned_workout",
+        context: {
+          workout_title: assignment.Workout?.title,
+          decline_reason: decline_reason.trim(),
+        },
+      });
+    } catch (e) {
+      console.error("Notification (workout_declined) failed:", e);
+    }
+
+    return res.json({ message: "Workout declined." });
+  } catch (error) {
+    console.error("decline_assignment error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};

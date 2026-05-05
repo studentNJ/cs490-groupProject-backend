@@ -179,3 +179,38 @@ module.exports.get_coach_profile = async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 }
+
+module.exports.update_profile_picture = async (req, res) => {
+  try {
+    const user_id = req.user.user_id;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const user = await User.findByPk(user_id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    await user.update({
+      profile_pic: `/uploads/${req.file.filename}`,
+    });
+
+    return res.json({
+      message: "Profile picture updated successfully!",
+      profile_pic: `/uploads/${req.file.filename}`,
+      user: {
+        user_id: user.user_id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        phone: user.phone,
+        profile_pic: user.profile_pic,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
