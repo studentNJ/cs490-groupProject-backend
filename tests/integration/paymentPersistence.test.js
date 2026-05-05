@@ -1,11 +1,13 @@
 const test = require("node:test")
 const assert = require("node:assert/strict")
+const { DataTypes } = require("sequelize")
 
 const {
   sequelize,
   User,
   Client,
   Coach,
+  CoachingPlan,
   Payment,
   Subscription,
 } = require("../../models")
@@ -22,16 +24,64 @@ const createUser = async (overrides) => {
   })
 }
 
+const setForeignKeyChecks = (enabled) =>
+  sequelize.query(`SET FOREIGN_KEY_CHECKS = ${enabled ? 1 : 0}`)
+
 test.before(async () => {
   await sequelize.authenticate()
+
+  const queryInterface = sequelize.getQueryInterface()
+  const userColumns = await queryInterface.describeTable("users")
+
+  if (!userColumns.google_id) {
+    await queryInterface.addColumn("users", "google_id", {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+    })
+  }
+
+  const [tables] = await sequelize.query("SHOW TABLES")
+  const tableNames = new Set(tables.map((row) => Object.values(row)[0]))
+
+  if (tableNames.has("Client") && !tableNames.has("client")) {
+    await queryInterface.dropTable("Client")
+    tableNames.delete("Client")
+  }
+
+  if (!tableNames.has("client")) {
+    await Client.sync()
+    tableNames.add("client")
+  }
+
+  if (!tableNames.has("coach")) {
+    await Coach.sync()
+    tableNames.add("coach")
+  }
+
+  if (!tableNames.has("payment")) {
+    await Payment.sync()
+    tableNames.add("payment")
+  }
+
+  if (!tableNames.has("coaching_plan")) {
+    await CoachingPlan.sync()
+    tableNames.add("coaching_plan")
+  }
+
+  if (!tableNames.has("subscription")) {
+    await Subscription.sync()
+  }
 })
 
 test.beforeEach(async () => {
+  await setForeignKeyChecks(false)
   await Subscription.destroy({ where: {} })
   await Payment.destroy({ where: {} })
   await Client.destroy({ where: {} })
   await Coach.destroy({ where: {} })
   await User.destroy({ where: {} })
+  await setForeignKeyChecks(true)
 })
 
 test.after(async () => {

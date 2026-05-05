@@ -74,6 +74,14 @@ module.exports = (sequelize, DataTypes) => {
         sourceKey: "user_id",
       })
     }
+
+    if (models.CoachReview) {
+      Coach.hasMany(models.CoachReview, {
+        foreignKey: "coach_user_id",
+        sourceKey: "user_id",
+        as: "reviews",
+      })
+    }
     /*
     Coach.hasMany(models.ClientCoachRelationship, {
       foreignKey: "coach_user_id",

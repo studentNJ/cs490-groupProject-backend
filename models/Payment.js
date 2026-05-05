@@ -15,6 +15,22 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+      nutritionist_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      package_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      coaching_plan_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      nutrition_plan_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
       transaction_id: {
         type: DataTypes.STRING(100),
         allowNull: false,
@@ -49,30 +65,38 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true,
       createdAt: "created_at",
       updatedAt: false,
-    },
-  )
+    }
+  );
 
   Payment.associate = (models) => {
-    if (models.Client) {
-      Payment.belongsTo(models.Client, {
+    // For the earnings query: User as: "client"
+    if (models.User) {
+      Payment.belongsTo(models.User, {
         foreignKey: "client_id",
         targetKey: "user_id",
-      })
-    }
-
-    if (models.Coach) {
-      Payment.belongsTo(models.Coach, {
+        as: "client",
+      });
+      Payment.belongsTo(models.User, {
         foreignKey: "coach_id",
         targetKey: "user_id",
-      })
+        as: "coach",
+      });
+    }
+
+    // For the earnings query: CoachingPlan as: "coachingPlan"
+    if (models.CoachingPlan) {
+      Payment.belongsTo(models.CoachingPlan, {
+        foreignKey: "coaching_plan_id",
+        as: "coachingPlan",
+      });
     }
 
     if (models.Subscription) {
       Payment.hasMany(models.Subscription, {
         foreignKey: "payment_id",
-      })
+      });
     }
-  }
+  };
 
   return Payment;
-}
+};

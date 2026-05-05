@@ -8,6 +8,7 @@ const {
   WorkoutLog,
   AssignedWorkout,
   CoachNote,
+  ProgressPhoto,
 } = require("../models");
 
 const { createNotification } = require("../services/notificationService");
@@ -412,19 +413,19 @@ module.exports.reject_request = async (req, res) => {
     }
     await relationship.destroy();
     try {
-        await createNotification({
-          recipient_user_id: parseInt(req.params.clientUserId),
-          actor_user_id: req.user.user_id,
-          for_role: "client",
-          type: "coach_request_rejected",
-          link: "/dashboard",
-          related_id: relationship.relationship_id,
-          related_type: "client_coach_relationship",
-        });
+      await createNotification({
+        recipient_user_id: parseInt(req.params.clientUserId),
+        actor_user_id: req.user.user_id,
+        for_role: "client",
+        type: "coach_request_rejected",
+        link: "/dashboard",
+        related_id: relationship.relationship_id,
+        related_type: "client_coach_relationship",
+      });
     } catch (e) {
       console.error("Notification (coach_request_rejected) failed:", e);
-    } 
-    
+    }
+
     return res.status(204).send();
   } catch (error) {
     console.error("reject_request error:", error);
@@ -475,10 +476,25 @@ module.exports.unhire_coach = async (req, res) => {
           status: "active",
         },
         transaction,
-      },
+      }
     );
 
     await transaction.commit();
+
+    // Fire notification — recipient is the (now ex-) coach
+    try {
+      await createNotification({
+        recipient_user_id: active.coach_user_id,
+        actor_user_id: clientUserId,
+        for_role: "coach",
+        type: "client_unhired",
+        link: "/dashboard",
+        related_id: active.relationship_id,
+        related_type: "client_coach_relationship",
+      });
+    } catch (e) {
+      console.error("Notification (client_unhired) failed:", e);
+    }
 
     return res.status(204).send();
   } catch (error) {
@@ -486,7 +502,7 @@ module.exports.unhire_coach = async (req, res) => {
     console.error("unhire_coach error:", error);
     return res.status(500).json({ error: error.message });
   }
- };
+};
 
 // GET /api/coach/clients — list active clients for this coach
 module.exports.get_active_clients = async (req, res) => {
@@ -673,7 +689,7 @@ module.exports.get_client_assigned_workouts = async (req, res) => {
     const coachUserId = req.user.user_id;
 
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.page) || 20;
+    const limit = parseInt(req.query.limit) || 20; // was: req.query.page (copy-paste bug)
     const offset = (page - 1) * limit;
 
     const statusFilter = req.query.status;
@@ -707,20 +723,6 @@ module.exports.get_client_assigned_workouts = async (req, res) => {
       offset,
     });
 
-    try {
-      await createNotification({
-        recipient_user_id: parseInt(req.params.clientUserId),
-        actor_user_id: req.user.user_id,
-        for_role: "client",
-        type: "workout_assigned",
-        link: "/dashboard",
-        related_id: newAssignment.assigned_workout_id,
-        related_type: "assigned_workout",
-        context: { workout_title: workout.title }, // workout already loaded for ownership check
-      });
-    } catch (e) {
-      console.error("Notification (workout_assigned) failed:", e);
-    }
     return res.json({
       totalItems: assignments.count,
       totalPages: Math.max(1, Math.ceil(assignments.count / limit)),
@@ -745,7 +747,6 @@ module.exports.assign_workout = async (req, res) => {
       return res.status(400).json({ error: "workout_id is required" });
     }
 
-    // verify the workout exists and was created by this coach
     const workout = await Workout.findOne({
       where: {
         workout_id,
@@ -759,7 +760,6 @@ module.exports.assign_workout = async (req, res) => {
       });
     }
 
-    // Prevent duplicate active assignment of the same workout
     const existing = await AssignedWorkout.findOne({
       where: {
         coach_user_id: coachUserId,
@@ -776,12 +776,12 @@ module.exports.assign_workout = async (req, res) => {
       });
     }
 
-    // validate due_date format (YYYY-MM-DD)
     if (due_date && !/^\d{4}-\d{2}-\d{2}$/.test(due_date)) {
       return res.status(400).json({
         error: "due_date must be in YYYY-MM-DD format",
       });
     }
+
     const assignment = await AssignedWorkout.create({
       coach_user_id: coachUserId,
       client_user_id: clientUserId,
@@ -789,6 +789,22 @@ module.exports.assign_workout = async (req, res) => {
       due_date: due_date || null,
       coach_notes: coach_notes || null,
     });
+
+    // Fire notification — recipient is the client, actor is the coach
+    try {
+      await createNotification({
+        recipient_user_id: clientUserId,
+        actor_user_id: coachUserId,
+        for_role: "client",
+        type: "workout_assigned",
+        link: "/dashboard",
+        related_id: assignment.assigned_workout_id,
+        related_type: "assigned_workout",
+        context: { workout_title: workout.title },
+      });
+    } catch (e) {
+      console.error("Notification (workout_assigned) failed:", e);
+    }
 
     return res.status(201).json({
       message: "Workout assigned successfully.",
@@ -807,7 +823,6 @@ module.exports.assign_workout = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 // DELETE /api/coach/assignments/:assignmentId — coach unassigns a workout
 module.exports.unassign_workout = async (req, res) => {
   try {
@@ -825,9 +840,9 @@ module.exports.unassign_workout = async (req, res) => {
     }
 
     // verify assignment exists AND belongs to this coach
-    const assignment = await AssignedWorkout.dinfOne({
+    const assignment = await AssignedWorkout.findOne({
       where: {
-        assinged_workout_id: assignmentId,
+        assigned_workout_id: assignmentId,
         coach_user_id: coachUserId,
       },
     });
@@ -840,7 +855,7 @@ module.exports.unassign_workout = async (req, res) => {
 
     return res.json({ message: "Assignment removed!" });
   } catch (error) {
-    console.error("unassign_workout_error:", err);
+    console.error("unassign_workout_error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -989,5 +1004,154 @@ module.exports.delete_note = async (req, res) => {
   } catch (error) {
     console.error("delete_note error:", error);
     res.status(500).json({ error: error.message });
+  }
+};
+
+// DELETE /api/coach/clients/:clientUserId — coach drops a client
+module.exports.drop_client = async (req, res) => {
+  const transaction = await ClientCoachRelationship.sequelize.transaction();
+  try {
+    const coachUserId = req.user.user_id;
+    const clientUserId = parseInt(req.params.clientUserId);
+
+    const activeRole = req.headers["x-active-role"] || req.user.role;
+    if (activeRole !== "coach") {
+      await transaction.rollback();
+      return res.status(403).json({ error: "Coaches only" });
+    }
+
+    if (isNaN(clientUserId)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: "Invalid client id" });
+    }
+
+    const active = await ClientCoachRelationship.findOne({
+      where: {
+        coach_user_id: coachUserId,
+        client_user_id: clientUserId,
+        status: "active",
+      },
+      transaction,
+    });
+
+    if (!active) {
+      await transaction.rollback();
+      return res
+        .status(404)
+        .json({ error: "No active relationship with this client" });
+    }
+
+    active.status = "inactive";
+    active.end_date = new Date().toISOString().split("T")[0];
+    await active.save({ transaction });
+
+    await Subscription.update(
+      { status: "cancelled", cancelled_at: new Date() },
+      {
+        where: {
+          client_id: clientUserId,
+          coach_id: coachUserId,
+          status: "active",
+        },
+        transaction,
+      }
+    );
+
+    await transaction.commit();
+
+    try {
+      await createNotification({
+        recipient_user_id: clientUserId,
+        actor_user_id: coachUserId,
+        for_role: "client",
+        type: "coach_dropped_client",
+        link: "/dashboard",
+        related_id: active.relationship_id,
+        related_type: "client_coach_relationship",
+      });
+    } catch (e) {
+      console.error("Notification (coach_dropped_client) failed:", e);
+    }
+
+    return res.status(204).send();
+  } catch (error) {
+    await transaction.rollback();
+    console.error("drop_client error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+// GET /api/coach/clients/:clientUserId/photos — list this client's progress photos
+// GET /api/coach/clients/:clientUserId/photos
+// Query params: page, limit, from_date, to_date
+module.exports.get_client_photos = async (req, res) => {
+  try {
+    const clientUserId = req.client.user_id;
+
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 12));
+    const offset = (page - 1) * limit;
+
+    const { from_date, to_date } = req.query;
+    const where = { user_id: clientUserId };
+
+    // Date range filter on taken_date, falling back to created_at if taken_date is null
+    const dateConditions = [];
+    if (from_date) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(from_date)) {
+        return res.status(400).json({ error: "from_date must be YYYY-MM-DD" });
+      }
+      dateConditions.push({
+        [Op.or]: [
+          { taken_date: { [Op.gte]: from_date } },
+          {
+            [Op.and]: [
+              { taken_date: null },
+              { created_at: { [Op.gte]: `${from_date} 00:00:00` } },
+            ],
+          },
+        ],
+      });
+    }
+    if (to_date) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(to_date)) {
+        return res.status(400).json({ error: "to_date must be YYYY-MM-DD" });
+      }
+      dateConditions.push({
+        [Op.or]: [
+          { taken_date: { [Op.lte]: to_date } },
+          {
+            [Op.and]: [
+              { taken_date: null },
+              { created_at: { [Op.lte]: `${to_date} 23:59:59` } },
+            ],
+          },
+        ],
+      });
+    }
+    if (dateConditions.length > 0) {
+      where[Op.and] = dateConditions;
+    }
+
+    const result = await ProgressPhoto.findAndCountAll({
+      where,
+      order: [
+        ["taken_date", "DESC"],
+        ["created_at", "DESC"],
+      ],
+      limit,
+      offset,
+    });
+
+    return res.json({
+      data: result.rows,
+      totalItems: result.count,
+      totalPages: Math.max(1, Math.ceil(result.count / limit)),
+      currentPage: page,
+      limit,
+    });
+  } catch (err) {
+    console.error("get_client_photos error:", err);
+    res.status(500).json({ error: err.message });
   }
 };

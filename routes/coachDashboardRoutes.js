@@ -3,24 +3,86 @@ const router = express.Router();
 const coachController = require("../controllers/coachController");
 const auth = require("../middleware/authMiddleware");
 const requireActiveCoachRelationship = require("../middleware/requireActiveCoachRelationship");
+/**
+ * @swagger
+ * tags:
+ *   name: Coach Dashboard
+ *   description: Coach-side operations
+ */
 
-// Pending requests (coach-side)
+/**
+ * @swagger
+ * /api/coach/requests:
+ *   get:
+ *     summary: Get pending client requests
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of pending requests
+ */
 router.get("/requests", auth, coachController.get_pending_requests);
+
+/**
+ * @swagger
+ * /api/coach/requests/{clientUserId}/approve:
+ *   post:
+ *     summary: Approve a client request
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: clientUserId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Request approved
+ */
 router.post(
   "/requests/:clientUserId/approve",
   auth,
   coachController.approve_request
 );
+
+/**
+ * @swagger
+ * /api/coach/requests/{clientUserId}/reject:
+ *   post:
+ *     summary: Reject a client request
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.post(
   "/requests/:clientUserId/reject",
   auth,
   coachController.reject_request
 );
 
-// Active clients list (coach dashboard)
+/**
+ * @swagger
+ * /api/coach/clients:
+ *   get:
+ *     summary: Get active clients
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get("/clients", auth, coachController.get_active_clients);
 
-// Client detail (Overview tab)
+/**
+ * @swagger
+ * /api/coach/clients/{clientUserId}:
+ *   get:
+ *     summary: Get client detail
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get(
   "/clients/:clientUserId",
   auth,
@@ -28,13 +90,31 @@ router.get(
   coachController.get_client_detail
 );
 
-// Workouts — read
+/**
+ * @swagger
+ * /api/coach/clients/{clientUserId}/workouts/logs:
+ *   get:
+ *     summary: Get client workout logs
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get(
   "/clients/:clientUserId/workouts/logs",
   auth,
   requireActiveCoachRelationship,
   coachController.get_client_workout_logs
 );
+
+/**
+ * @swagger
+ * /api/coach/clients/{clientUserId}/workouts/assigned:
+ *   get:
+ *     summary: Get assigned workouts
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get(
   "/clients/:clientUserId/workouts/assigned",
   auth,
@@ -42,26 +122,62 @@ router.get(
   coachController.get_client_assigned_workouts
 );
 
-// Workouts — assign / unassign
+/**
+ * @swagger
+ * /api/coach/clients/{clientUserId}/workouts/assign:
+ *   post:
+ *     summary: Assign workout to client
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.post(
   "/clients/:clientUserId/workouts/assign",
   auth,
   requireActiveCoachRelationship,
   coachController.assign_workout
 );
+
+/**
+ * @swagger
+ * /api/coach/assignments/{assignmentId}:
+ *   delete:
+ *     summary: Unassign workout
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.delete(
   "/assignments/:assignmentId",
   auth,
   coachController.unassign_workout
 );
 
-// Notes — list + create
+/**
+ * @swagger
+ * /api/coach/clients/{clientUserId}/notes:
+ *   get:
+ *     summary: Get client notes
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get(
   "/clients/:clientUserId/notes",
   auth,
   requireActiveCoachRelationship,
   coachController.list_client_notes
 );
+
+/**
+ * @swagger
+ * /api/coach/clients/{clientUserId}/notes:
+ *   post:
+ *     summary: Create client note
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.post(
   "/clients/:clientUserId/notes",
   auth,
@@ -69,8 +185,65 @@ router.post(
   coachController.create_client_note
 );
 
-// Notes — edit + delete (use noteId, ownership checked in controller)
+/**
+ * @swagger
+ * /api/coach/notes/{noteId}:
+ *   patch:
+ *     summary: Update note
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.patch("/notes/:noteId", auth, coachController.update_note);
+
+/**
+ * @swagger
+ * /api/coach/notes/{noteId}:
+ *   delete:
+ *     summary: Delete note
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.delete("/notes/:noteId", auth, coachController.delete_note);
+
+/**
+ * @swagger
+ * /api/coach/clients/{clientUserId}:
+ *   delete:
+ *     summary: Drop client
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.delete("/clients/:clientUserId", auth, coachController.drop_client);
+
+/**
+ * @swagger
+ * /api/coach/clients/{clientUserId}/photos:
+ *   get:
+ *     summary: Get client progress photos
+ *     tags: [Coach Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: clientUserId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: List of progress photos
+ *       403:
+ *         description: No active relationship
+ *       500:
+ *         description: Server error
+ */
+router.get(
+  "/clients/:clientUserId/photos",
+  auth,
+  requireActiveCoachRelationship,
+  coachController.get_client_photos
+);
 
 module.exports = router;

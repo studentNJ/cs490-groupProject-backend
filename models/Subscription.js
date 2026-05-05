@@ -15,6 +15,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+      coaching_plan_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
       payment_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
@@ -42,30 +46,38 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true,
       createdAt: "created_at",
       updatedAt: "updated_at",
-    },
-  )
+    }
+  );
 
   Subscription.associate = (models) => {
-    if (models.Client) {
-      Subscription.belongsTo(models.Client, {
+    // For getMySubscription: User as "coach"
+    if (models.User) {
+      Subscription.belongsTo(models.User, {
         foreignKey: "client_id",
         targetKey: "user_id",
-      })
-    }
-
-    if (models.Coach) {
-      Subscription.belongsTo(models.Coach, {
+        as: "client",
+      });
+      Subscription.belongsTo(models.User, {
         foreignKey: "coach_id",
         targetKey: "user_id",
-      })
+        as: "coach",
+      });
+    }
+
+    // For getMySubscription: CoachingPlan as "coachingPlan"
+    if (models.CoachingPlan) {
+      Subscription.belongsTo(models.CoachingPlan, {
+        foreignKey: "coaching_plan_id",
+        as: "coachingPlan",
+      });
     }
 
     if (models.Payment) {
       Subscription.belongsTo(models.Payment, {
         foreignKey: "payment_id",
-      })
+      });
     }
-  }
+  };
 
   return Subscription;
-}
+};
