@@ -1,4 +1,4 @@
-const { Op } = require("sequelize")
+const { Op } = require("sequelize");
 const {
   Payment,
   Subscription,
@@ -6,38 +6,39 @@ const {
   Coach,
   User,
   ClientCoachRelationship,
-} = require("../models")
+  CoachingPlan,
+} = require("../models");
 
-const getActiveRole = (req) => req.headers["x-active-role"] || req.user.role
+const getActiveRole = (req) => req.headers["x-active-role"] || req.user.role;
 
 const generateTransactionId = (prefix = "txn") => {
-  const randomPart = Math.random().toString(36).slice(2, 10)
-  return `${prefix}_${Date.now()}_${randomPart}`
-}
+  const randomPart = Math.random().toString(36).slice(2, 10);
+  return `${prefix}_${Date.now()}_${randomPart}`;
+};
 
 const addOneMonth = (dateString) => {
-  const nextDate = new Date(dateString)
-  nextDate.setMonth(nextDate.getMonth() + 1)
-  return nextDate.toISOString().split("T")[0]
-}
+  const nextDate = new Date(dateString);
+  nextDate.setMonth(nextDate.getMonth() + 1);
+  return nextDate.toISOString().split("T")[0];
+};
 
 module.exports.process_payment = async (req, res) => {
-  const transaction = await Payment.sequelize.transaction()
+  const transaction = await Payment.sequelize.transaction();
 
   try {
     if (getActiveRole(req) !== "client") {
-      await transaction.rollback()
-      return res.status(403).json({ error: "Clients only" })
+      await transaction.rollback();
+      return res.status(403).json({ error: "Clients only" });
     }
 
-    const clientId = req.user.user_id
-    const coachId = parseInt(req.body.coach_id, 10)
-    const paymentMethod = req.body.payment_method || "card"
-    const currency = req.body.currency || "USD"
+    const clientId = req.user.user_id;
+    const coachId = parseInt(req.body.coach_id, 10);
+    const paymentMethod = req.body.payment_method || "card";
+    const currency = req.body.currency || "USD";
 
     if (isNaN(coachId)) {
-      await transaction.rollback()
-      return res.status(400).json({ error: "Valid coach_id is required" })
+      await transaction.rollback();
+      return res.status(400).json({ error: "Valid coach_id is required" });
     }
 
     const activeRelationship = await ClientCoachRelationship.findOne({
@@ -47,28 +48,29 @@ module.exports.process_payment = async (req, res) => {
         status: "active",
       },
       transaction,
-    })
+    });
 
     if (!activeRelationship) {
-      await transaction.rollback()
+      await transaction.rollback();
       return res.status(400).json({
-        error: "An active client-coach relationship is required before payment.",
-      })
+        error:
+          "An active client-coach relationship is required before payment.",
+      });
     }
 
-    const coach = await Coach.findByPk(coachId, { transaction })
+    const coach = await Coach.findByPk(coachId, { transaction });
     if (!coach) {
-      await transaction.rollback()
-      return res.status(404).json({ error: "Coach not found" })
+      await transaction.rollback();
+      return res.status(404).json({ error: "Coach not found" });
     }
 
     if (coach.price === null || coach.price === undefined) {
-      await transaction.rollback()
-      return res.status(400).json({ error: "Coach price is not set" })
+      await transaction.rollback();
+      return res.status(400).json({ error: "Coach price is not set" });
     }
 
-    const today = new Date().toISOString().split("T")[0]
-    const transactionId = generateTransactionId()
+    const today = new Date().toISOString().split("T")[0];
+    const transactionId = generateTransactionId();
 
     const payment = await Payment.create(
       {
@@ -81,8 +83,8 @@ module.exports.process_payment = async (req, res) => {
         payment_status: "completed",
         currency,
       },
-      { transaction },
-    )
+      { transaction }
+    );
 
     const existingSubscription = await Subscription.findOne({
       where: {
@@ -94,9 +96,9 @@ module.exports.process_payment = async (req, res) => {
       },
       order: [["subscription_id", "DESC"]],
       transaction,
-    })
+    });
 
-    let subscription
+    let subscription;
     if (existingSubscription) {
       subscription = await existingSubscription.update(
         {
@@ -105,8 +107,8 @@ module.exports.process_payment = async (req, res) => {
           cancelled_at: null,
           end_date: addOneMonth(today),
         },
-        { transaction },
-      )
+        { transaction }
+      );
     } else {
       subscription = await Subscription.create(
         {
@@ -117,63 +119,71 @@ module.exports.process_payment = async (req, res) => {
           end_date: addOneMonth(today),
           status: "active",
         },
-        { transaction },
-      )
+        { transaction }
+      );
     }
 
-    await transaction.commit()
+    await transaction.commit();
 
     return res.status(201).json({
       message: "Payment recorded successfully.",
       payment,
       subscription,
-    })
+    });
   } catch (error) {
-    await transaction.rollback()
-    return res.status(500).json({ error: error.message })
+    await transaction.rollback();
+    return res.status(500).json({ error: error.message });
   }
-}
+};
 
 module.exports.get_payment_history = async (req, res) => {
   try {
     if (getActiveRole(req) !== "client") {
-      return res.status(403).json({ error: "Clients only" })
+      return res.status(403).json({ error: "Clients only" });
     }
 
     const payments = await Payment.findAll({
       where: { client_id: req.user.user_id },
       include: [
         {
-          model: Coach,
-          attributes: ["user_id", "specialization", "price"],
+          model: User,
+          as: "coach",
+          attributes: ["user_id", "first_name", "last_name", "profile_pic"],
           include: [
             {
-              model: User,
-              attributes: ["user_id", "first_name", "last_name", "profile_pic"],
+              model: Coach,
+              attributes: ["specialization", "price"],
+              required: false,
             },
           ],
         },
+        {
+          model: CoachingPlan,
+          as: "coachingPlan",
+          attributes: ["plan_id", "title"],
+        },
       ],
       order: [["payment_date", "DESC"]],
-    })
+    });
 
-    return res.status(200).json({ payments })
+    return res.status(200).json({ payments });
   } catch (error) {
-    return res.status(500).json({ error: error.message })
+    console.error("get_payment_history error:", error);
+    return res.status(500).json({ error: error.message });
   }
-}
+};
 
 module.exports.get_coach_earnings = async (req, res) => {
   try {
     if (getActiveRole(req) !== "coach") {
-      return res.status(403).json({ error: "Coaches only" })
+      return res.status(403).json({ error: "Coaches only" });
     }
 
-    const coachId = req.user.user_id
+    const coachId = req.user.user_id;
     const completedWhere = {
       coach_id: coachId,
       payment_status: "completed",
-    }
+    };
 
     const [totalEarnings, totalPayments, recentPayments] = await Promise.all([
       Payment.sum("payment_amount", { where: completedWhere }),
@@ -182,30 +192,26 @@ module.exports.get_coach_earnings = async (req, res) => {
         where: completedWhere,
         include: [
           {
-            model: Client,
-            attributes: ["user_id"],
-            include: [
-              {
-                model: User,
-                attributes: ["user_id", "first_name", "last_name", "profile_pic"],
-              },
-            ],
+            model: User,
+            as: "client",
+            attributes: ["user_id", "first_name", "last_name", "profile_pic"],
           },
         ],
         order: [["payment_date", "DESC"]],
         limit: 10,
       }),
-    ])
+    ]);
 
     return res.status(200).json({
       total_earnings: Number(totalEarnings || 0),
       total_payments: totalPayments,
       recent_payments: recentPayments,
-    })
+    });
   } catch (error) {
-    return res.status(500).json({ error: error.message })
+    console.error("get_coach_earnings error:", error);
+    return res.status(500).json({ error: error.message });
   }
-}
+};
 
 module.exports.get_payment_stats = async (_req, res) => {
   try {
@@ -217,24 +223,27 @@ module.exports.get_payment_stats = async (_req, res) => {
       Payment.findAll({
         attributes: [
           "payment_status",
-          [Payment.sequelize.fn("COUNT", Payment.sequelize.col("payment_id")), "count"],
+          [
+            Payment.sequelize.fn("COUNT", Payment.sequelize.col("payment_id")),
+            "count",
+          ],
         ],
         group: ["payment_status"],
         raw: true,
       }),
-    ])
+    ]);
 
     const paymentsByStatus = statusRows.reduce((accumulator, row) => {
-      accumulator[row.payment_status] = Number(row.count)
-      return accumulator
-    }, {})
+      accumulator[row.payment_status] = Number(row.count);
+      return accumulator;
+    }, {});
 
     return res.status(200).json({
       total_volume: Number(totalVolume || 0),
       total_payments: totalPayments,
       payments_by_status: paymentsByStatus,
-    })
+    });
   } catch (error) {
-    return res.status(500).json({ error: error.message })
+    return res.status(500).json({ error: error.message });
   }
-}
+};
