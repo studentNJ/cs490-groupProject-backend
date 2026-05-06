@@ -33,6 +33,10 @@ const TEMPLATES = {
     title: "New progress photo",
     body: `${actorName} uploaded a new progress photo.`,
   }),
+  session_package_purchased: ({ actorName, context }) => ({
+    title: "Package purchased",
+    body: `${actorName} purchased ${context.package_name} (${context.session_count} sessions)`,
+  }),
 };
 
 async function createNotification({

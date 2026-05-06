@@ -4,6 +4,8 @@ const coachController = require("../controllers/coachController");
 const reportController = require("../controllers/reportController");
 const reviewController = require("../controllers/reviewController");
 const { getCoachPlans } = require("../controllers/subscriptionController.js");
+const sessionPackageController = require("../controllers/sessionPackageController");
+const availabilityController = require("../controllers/availabilityController");
 
 /**
  * @swagger
@@ -117,4 +119,13 @@ router.get("/:coachUserId", auth, coachController.get_coach);
  */
 router.post("/:coachUserId/request", auth, coachController.request_coach);
 
+router.get(
+  "/:coachUserId/packages",
+  sessionPackageController.list_coach_packages_public
+);
+
+router.get(
+  "/:coachUserId/availability",
+  availabilityController.list_coach_slots_public
+);
 module.exports = router;

@@ -23,6 +23,9 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const mealRoutes = require("./routes/mealRoutes");
 const calendarRoutes = require("./routes/calendarRoutes");
 const progressPhotoRoutes = require("./routes/progressPhotoRoutes");
+const sessionPackageRoutes = require("./routes/sessionPackageRoutes");
+const availabilityRoutes = require("./routes/availabilityRoutes");
+const sessionPurchaseRoutes = require("./routes/sessionPurchaseRoutes");
 
 const app = express();
 
@@ -102,6 +105,9 @@ app.use("/api/coaches", coachRoutes);
 app.use("/api/photos", progressPhotoRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/coach/plans", coachPlanRoutes);
+app.use("/api/coach/packages", sessionPackageRoutes);
+app.use("/api/coach/availability", availabilityRoutes);
+app.use("/api/sessions", sessionPurchaseRoutes);
 app.use("/api/coach", coachDashboardRoutes);
 app.use("/api/client", clientRoutes);
 app.use("/api/qualifications", qualificationRoutes);
