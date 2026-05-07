@@ -2,6 +2,7 @@ const {
   User,
   Client,
   Coach,
+  Nutritionist,
   CoachQualification,
   CoachCertification,
 } = require("../models")
@@ -173,6 +174,68 @@ module.exports.get_coach_profile = async (req, res) => {
         is_approved: coach.is_approved,
         qualifications,
         certifications,
+      },
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+}
+
+module.exports.get_nutritionist_profile = async (req, res) => {
+  try {
+    const user_id = req.user.user_id
+    const user = await User.findByPk(user_id, {
+      attributes: ["user_id", "first_name", "last_name", "email", "phone", "profile_pic", "role"],
+    })
+    const nutritionist = await Nutritionist.findByPk(user_id)
+    if (!user || !nutritionist) return res.status(404).json({ message: "Nutritionist not found" })
+    res.status(200).json({
+      user: user.toJSON(),
+      nutritionist: {
+        price: nutritionist.price,
+        description: nutritionist.description,
+        is_approved: nutritionist.is_approved,
+      },
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+}
+
+module.exports.update_nutritionist_profile = async (req, res) => {
+  try {
+    const user_id = req.user.user_id
+    const { first_name, last_name, phone, price, description } = req.body
+    const user = await User.findByPk(user_id)
+    if (!user) return res.status(404).json({ message: "User not found" })
+    if (user.role !== "nutritionist") return res.status(403).json({ message: "Only nutritionists can update this profile." })
+    await user.update({
+      first_name: first_name || user.first_name,
+      last_name: last_name || user.last_name,
+      phone: phone || user.phone,
+    })
+    const nutritionist = await Nutritionist.findByPk(user_id)
+    if (nutritionist) {
+      await nutritionist.update({
+        price: price !== undefined ? price : nutritionist.price,
+        description: description !== undefined ? description : nutritionist.description,
+      })
+    }
+    res.status(200).json({
+      message: "Nutritionist profile updated successfully!",
+      user: {
+        user_id: user.user_id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        phone: user.phone,
+        profile_pic: user.profile_pic,
+        role: user.role,
+      },
+      nutritionist: {
+        price: nutritionist.price,
+        description: nutritionist.description,
+        is_approved: nutritionist.is_approved,
       },
     })
   } catch (err) {

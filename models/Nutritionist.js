@@ -10,6 +10,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DECIMAL(8, 2),
         allowNull: true,
       },
+      description: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
       is_approved: {
         type: DataTypes.BOOLEAN,
         allowNull: false,

@@ -13,7 +13,7 @@ module.exports.browse_nutritionists = async (req, res) => {
     const nutritionists = await User.findAndCountAll({
       where: { role: "nutritionist", is_active: true },
       attributes: ["user_id", "first_name", "last_name", "profile_pic"],
-      include: [{ model: Nutritionist, required: true, where: { is_approved: true } }],
+      include: [{ model: Nutritionist, required: true }],
       limit,
       offset,
       order: [["user_id", "ASC"]],
