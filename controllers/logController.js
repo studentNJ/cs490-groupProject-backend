@@ -372,7 +372,7 @@ module.exports.meal_logs = async (req, res) => {
 
     const formatted = logs.map(log => ({
         date: log.date,
-        calories: log.meal?.calories,
+        calories: log.calories_consumed,
         protein: log.meal?.protein,
         carbs: log.meal?.carbs,
         fats: log.meal?.fat,
@@ -440,6 +440,11 @@ module.exports.create_custom_meal_log = async (req, res) => {
       name,
       calories_per_serving,
       servings,
+      protein,
+      carbs,
+      fat,
+      fiber,
+      description,
       date
     } = req.body;
 
@@ -449,7 +454,12 @@ module.exports.create_custom_meal_log = async (req, res) => {
       name,
       calories_per_serving,
       is_premade: false,
-      created_by_user_id: user_id
+      created_by_user_id: user_id,
+      protein,
+      carbs,
+      fat,
+      fiber,
+      description,
     });
 
     const log = await MealLog.create({
@@ -635,7 +645,7 @@ const metricConfig = {
 const getPeriodGrouping = (period) => {
   switch (period) {
     case "week":
-      return "YEARWEEK(date)";
+      return "DATE_FORMAT(date, '%Y-%u')";
     case "month":
       return "DATE_FORMAT(date, '%Y-%m')";
     case "year":
@@ -675,7 +685,7 @@ module.exports.get_metric = async (req, res) => {
         ],
       ],
       group: [literal(groupExpr)],
-      order: [[literal("period"), "ASC"]],
+      order: [[literal(groupExpr), "ASC"]],
       raw: true,
     });
 
@@ -794,13 +804,16 @@ module.exports.get_today_activity = async (req, res) => {
   try {
     const userId = req.user.user_id;
     const today = new Date().toISOString().slice(0, 10);
+    console.log(today);
 
+    console.log(userId);
     const total = await WorkoutLog.sum("duration_minutes", {
       where: {
         client_id: userId, 
         date: today,
       },
     });
+    console.log(total);
 
     return res.json({
       totalMinutes: total || 0,
