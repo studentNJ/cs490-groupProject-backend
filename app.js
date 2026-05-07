@@ -3,7 +3,6 @@ const cors = require("cors");
 const express = require("express");
 const sequelize = require("./config/database");
 
-// Route imports
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const profileRoutes = require("./routes/profileRoutes");
@@ -25,11 +24,11 @@ const calendarRoutes = require("./routes/calendarRoutes");
 const progressPhotoRoutes = require("./routes/progressPhotoRoutes");
 const sessionPackageRoutes = require("./routes/sessionPackageRoutes");
 const availabilityRoutes = require("./routes/availabilityRoutes");
+const nutritionistRoutes = require("./routes/nutritionistRoutes");
 const sessionPurchaseRoutes = require("./routes/sessionPurchaseRoutes");
 
 const app = express();
 
-// Swagger
 let swaggerUi;
 let swaggerJsdoc;
 
@@ -76,7 +75,6 @@ if (swaggerUi && swaggerJsdoc) {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 }
 
-// --- Middleware ---
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || true,
@@ -86,13 +84,11 @@ app.use(
 app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ limit: "20mb", extended: true }));
 
-// --- DB connection check ---
 sequelize
   .authenticate()
   .then(() => console.log("Database connected"))
   .catch((err) => console.error("DB error:", err));
 
-// --- Routes ---
 app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/api/survey", surveyRoutes);
@@ -116,9 +112,8 @@ app.use("/api/logs", logRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/meals", mealRoutes);
+app.use("/api/nutritionist", nutritionistRoutes);
 app.use("/api/calendar", calendarRoutes);
-
-// Static file serving
 app.use("/uploads", express.static("uploads"));
 
 module.exports = app;
