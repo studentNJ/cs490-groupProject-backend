@@ -94,4 +94,5 @@ router.post(
  *         description: Server error
  */
 router.get("/", auth, certificationController.get_certification);
+router.delete("/:id", auth, certificationController.delete_certification);
 module.exports = router;

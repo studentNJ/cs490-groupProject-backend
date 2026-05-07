@@ -2,13 +2,14 @@ const { CoachQualification } = require("../models");
 
 module.exports.add_qualification = async (req, res) => { //add qualifications
     try {
-        const user_id = req.user.user_id;
+        const coach_id = req.user.user_id;
+        console.log("req.user:", req.user);
         const {degree_name, institution, field_of_study, year_completed} = req.body;
         if (!degree_name || !institution || !field_of_study || !year_completed){
             return res.status(400).json({ message: "All information must be submitted" });
         }
         const qualification = await CoachQualification.create({
-            user_id,
+            coach_id,
             degree_name,
             institution,
             field_of_study,
@@ -25,9 +26,11 @@ module.exports.add_qualification = async (req, res) => { //add qualifications
 
 module.exports.get_qualification = async (req, res) => { //get qualifications
     try {
-        const user_id = req.user.user_id;
+        const coach_id = req.user.user_id;
+
+        console.log("coach_id:", coach_id); 
         const qualifications = await CoachQualification.findAll({
-            where: {user_id},
+            where: {coach_id},
         });
         res.json(qualifications);
     } catch (err){
@@ -39,7 +42,7 @@ module.exports.delete_qualification = async (req, res ) => {
     try {
         const coach_id = req.user.user_id;
         const {id} = req.params;
-        await CoachQualification.destroy({
+        const deleted = await CoachQualification.destroy({
             where: {qualification_id: id, coach_id},
         });
         if (!deleted){
