@@ -28,7 +28,10 @@ module.exports = (sequelize, DataTypes) => {
           "workout_completed",
           "client_unhired",
           "coach_dropped_client",
-          "progress_photo_uploaded"
+          "progress_photo_uploaded",
+          "workout_accepted",
+          "workout_declined",
+          "session_package_purchased"
         ),
         allowNull: false,
       },

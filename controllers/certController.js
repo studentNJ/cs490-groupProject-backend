@@ -70,3 +70,25 @@ module.exports.get_certification = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+module.exports.delete_certification = async (req, res) => {
+  try {
+    const coach_id = req.user.user_id;
+    const { id } = req.params;
+
+    const deleted = await CoachCertification.destroy({
+      where: {
+        certification_id: id,
+        coach_id,
+      },
+    });
+
+    if (!deleted) {
+      return res.status(404).json({ error: "Certification not found." });
+    }
+
+    res.json({ message: "Certification deleted successfully!" });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};

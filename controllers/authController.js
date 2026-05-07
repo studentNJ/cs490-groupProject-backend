@@ -116,7 +116,7 @@ module.exports.register_coach_post = async (req, res) => {
 
     if (coachCertificationFile.length > 0) {
       const certificationRows = coachCertificationFile.map((file) => ({
-        coach_user_id: user.user_id,
+        coach_id: user.user_id,
         document_url: `/uploads/${file.filename}`,
         status: "pending",
       }))
