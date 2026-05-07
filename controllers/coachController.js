@@ -9,6 +9,7 @@ const {
   AssignedWorkout,
   CoachNote,
   ProgressPhoto,
+  CoachReport,
 } = require("../models");
 
 const { createNotification } = require("../services/notificationService");
@@ -1153,5 +1154,30 @@ module.exports.get_client_photos = async (req, res) => {
   } catch (err) {
     console.error("get_client_photos error:", err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports.reportCoach = async (req, res) => {
+  try {
+    const { CoachReport } = require("../models");
+    const { category, title, description, severity } = req.body;
+
+    if (!category || !title || !description) {
+      return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    const report = await CoachReport.create({
+      reporter_user_id: req.user.user_id,
+      coach_user_id: req.params.id,
+      category,
+      title,
+      description,
+      severity: severity || "medium",
+      status: "open",
+    });
+
+    res.status(201).json({ message: "Report submitted.", report });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };

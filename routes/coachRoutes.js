@@ -128,4 +128,7 @@ router.get(
   "/:coachUserId/availability",
   availabilityController.list_coach_slots_public
 );
+
+router.post("/:id/report", auth, coachController.reportCoach);
+
 module.exports = router;
