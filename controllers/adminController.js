@@ -599,7 +599,7 @@ module.exports.getUserEngagement = async (req, res) => {
     let startDate = new Date();
 
     if (range === "daily") {
-      startDate.setDate(now.getDate() - 1);
+      startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     } else if (range === "weekly") {
       startDate.setDate(now.getDate() - 7);
     } else if (range === "monthly") {
@@ -621,8 +621,11 @@ module.exports.getUserEngagement = async (req, res) => {
 
       if (date < startDate) return;  
       let key;
-
-      if (range === "monthly") {
+      if (range === "daily") {
+        const bucket = new Date(date);
+        bucket.setMinutes(0, 0, 0);
+        key = bucket.toISOString();
+      } else if (range === "monthly") {
         key = `${date.getFullYear()}-${date.getMonth() + 1}`;
       } else {
         key = date.toISOString().split("T")[0]; // YYYY-MM-DD
@@ -631,7 +634,18 @@ module.exports.getUserEngagement = async (req, res) => {
       map[key] = (map[key] || 0) + 1;
     });
 
-    const labels = Object.keys(map).sort();
+    let labels;
+    if (range === "daily") {
+      labels = [];
+      const current = new Date(now);
+      current.setMinutes(0, 0, 0);
+      for (let i = 23; i >= 0; i--) {
+        const bucket = new Date(current.getTime() - i * 60 * 60 * 1000);
+        labels.push(bucket.toISOString());
+      }
+    } else {
+      labels = Object.keys(map).sort();
+    }
     const values = labels.map((l) => map[l]);
 
     return res.json({
