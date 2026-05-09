@@ -26,6 +26,7 @@ const progressPhotoRoutes = require("./routes/progressPhotoRoutes");
 const sessionPackageRoutes = require("./routes/sessionPackageRoutes");
 const availabilityRoutes = require("./routes/availabilityRoutes");
 const sessionPurchaseRoutes = require("./routes/sessionPurchaseRoutes");
+const nutritionistRoutes = require("./routes/nutritionistRoutes");
 
 const app = express();
 
@@ -117,6 +118,7 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/meals", mealRoutes);
 app.use("/api/calendar", calendarRoutes);
+app.use("/api/nutritionist", nutritionistRoutes);
 
 // Static file serving
 app.use("/uploads", express.static("uploads"));
