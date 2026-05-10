@@ -29,6 +29,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
       status: {
+<<<<<<< HEAD
         type: DataTypes.ENUM(
           "assigned",
           "accepted",
@@ -36,6 +37,9 @@ module.exports = (sequelize, DataTypes) => {
           "completed",
           "skipped"
         ),
+=======
+        type: DataTypes.ENUM("assigned", "completed", "skipped", "accepted", "declined"),
+>>>>>>> beb6e72c04e3ca0968709e8827df33fc9688aad7
         allowNull: false,
         defaultValue: "assigned",
       },

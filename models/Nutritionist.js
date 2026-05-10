@@ -15,6 +15,9 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: false,
       },
+      description: {
+        type: DataTypes.TEXT,
+      }
     },
     {
       tableName: "nutritionist",

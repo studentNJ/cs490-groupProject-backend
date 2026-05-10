@@ -26,9 +26,14 @@ const progressPhotoRoutes = require("./routes/progressPhotoRoutes");
 const sessionPackageRoutes = require("./routes/sessionPackageRoutes");
 const availabilityRoutes = require("./routes/availabilityRoutes");
 const sessionPurchaseRoutes = require("./routes/sessionPurchaseRoutes");
+<<<<<<< HEAD
 const sessionBookingRoutes = require("./routes/sessionBookingRoutes");
+=======
+const nutritionistRoutes = require("./routes/nutritionistRoutes");
+>>>>>>> beb6e72c04e3ca0968709e8827df33fc9688aad7
 
 const app = express();
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
 // Swagger
 let swaggerUi;
@@ -80,7 +85,7 @@ if (swaggerUi && swaggerJsdoc) {
 // --- Middleware ---
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || true,
+    origin: FRONTEND_URL,
     credentials: true,
   })
 );
@@ -119,7 +124,11 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/meals", mealRoutes);
 app.use("/api/calendar", calendarRoutes);
+<<<<<<< HEAD
 // ...
+=======
+app.use("/api/nutritionist", nutritionistRoutes);
+>>>>>>> beb6e72c04e3ca0968709e8827df33fc9688aad7
 
 // Static file serving
 app.use("/uploads", express.static("uploads"));

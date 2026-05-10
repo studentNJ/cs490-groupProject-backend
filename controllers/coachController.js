@@ -9,7 +9,6 @@ const {
   AssignedWorkout,
   CoachNote,
   ProgressPhoto,
-  CoachReport,
 } = require("../models");
 
 const { createNotification } = require("../services/notificationService");
@@ -694,7 +693,14 @@ module.exports.get_client_assigned_workouts = async (req, res) => {
     const offset = (page - 1) * limit;
 
     const statusFilter = req.query.status;
-    const validStatuses = ["assigned", "completed", "skipped"];
+    const validStatuses = [
+      "assigned",
+      "accepted",
+      "declined",
+      "completed",
+      "skipped",
+    ];
+
     const where = {
       coach_user_id: coachUserId,
       client_user_id: clientUserId,
@@ -766,7 +772,7 @@ module.exports.assign_workout = async (req, res) => {
         coach_user_id: coachUserId,
         client_user_id: clientUserId,
         workout_id,
-        status: "assigned",
+        status: { [Op.in]: ["assigned", "accepted"] },
       },
     });
 
@@ -1083,7 +1089,6 @@ module.exports.drop_client = async (req, res) => {
 };
 
 // GET /api/coach/clients/:clientUserId/photos — list this client's progress photos
-// GET /api/coach/clients/:clientUserId/photos
 // Query params: page, limit, from_date, to_date
 module.exports.get_client_photos = async (req, res) => {
   try {
@@ -1154,30 +1159,5 @@ module.exports.get_client_photos = async (req, res) => {
   } catch (err) {
     console.error("get_client_photos error:", err);
     res.status(500).json({ error: err.message });
-  }
-};
-
-module.exports.reportCoach = async (req, res) => {
-  try {
-    const { CoachReport } = require("../models");
-    const { category, title, description, severity } = req.body;
-
-    if (!category || !title || !description) {
-      return res.status(400).json({ message: "Missing required fields." });
-    }
-
-    const report = await CoachReport.create({
-      reporter_user_id: req.user.user_id,
-      coach_user_id: req.params.id,
-      category,
-      title,
-      description,
-      severity: severity || "medium",
-      status: "open",
-    });
-
-    res.status(201).json({ message: "Report submitted.", report });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
 };
