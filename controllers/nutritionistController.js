@@ -346,4 +346,56 @@ module.exports.create_meal = async (req, res) => {
   } catch (err) {
     return res.status(500).json({ error: err.message })
   }
-}
+};
+
+module.exports.drop_client = async (req, res) => {
+  try {
+    const nutritionistUserId = req.user.user_id;
+    const clientUserId = parseInt(req.params.clientUserId);
+
+    const activeRole = req.headers["x-active-role"] || req.user.role;
+    if (activeRole !== "nutritionist") {
+      return res.status(403).json({ error: "Nutritionists only" });
+    }
+    if (isNaN(clientUserId)) {
+      return res.status(400).json({ error: "Invalid client id" });
+    }
+
+    const active = await ClientNutritionistRelationship.findOne({
+      where: {
+        nutritionist_user_id: nutritionistUserId,
+        client_user_id: clientUserId,
+        status: "active",
+      },
+    });
+
+    if (!active) {
+      return res
+        .status(404)
+        .json({ error: "No active relationship with this client" });
+    }
+
+    active.status = "inactive";
+    active.end_date = new Date().toISOString().split("T")[0];
+    await active.save();
+
+    try {
+      await createNotification({
+        recipient_user_id: clientUserId,
+        actor_user_id: nutritionistUserId,
+        for_role: "client",
+        type: "nutritionist_dropped_client",
+        link: "/dashboard",
+        related_id: clientUserId,
+        related_type: "client_nutritionist_relationship",
+      });
+    } catch (e) {
+      console.error("Notification (nutritionist_dropped_client) failed:", e);
+    }
+
+    return res.status(204).send();
+  } catch (error) {
+    console.error("drop_client error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};

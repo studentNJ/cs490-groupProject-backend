@@ -28,7 +28,6 @@ const nutritionistRoutes = require("./routes/nutritionistRoutes");
 const sessionPurchaseRoutes = require("./routes/sessionPurchaseRoutes");
 
 const sessionBookingRoutes = require("./routes/sessionBookingRoutes");
-const nutritionistRoutes = require("./routes/nutritionistRoutes");
 
 const app = express();
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
@@ -119,7 +118,6 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/meals", mealRoutes);
 app.use("/api/nutritionist", nutritionistRoutes);
 app.use("/api/calendar", calendarRoutes);
-app.use("/api/nutritionist", nutritionistRoutes);
 
 // Static file serving
 app.use("/uploads", express.static("uploads"));
