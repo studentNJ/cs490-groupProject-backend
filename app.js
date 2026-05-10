@@ -27,7 +27,11 @@ const availabilityRoutes = require("./routes/availabilityRoutes");
 const nutritionistRoutes = require("./routes/nutritionistRoutes");
 const sessionPurchaseRoutes = require("./routes/sessionPurchaseRoutes");
 
+const sessionBookingRoutes = require("./routes/sessionBookingRoutes");
+const nutritionistRoutes = require("./routes/nutritionistRoutes");
+
 const app = express();
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
 let swaggerUi;
 let swaggerJsdoc;
@@ -77,7 +81,7 @@ if (swaggerUi && swaggerJsdoc) {
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || true,
+    origin: FRONTEND_URL,
     credentials: true,
   })
 );
@@ -104,6 +108,7 @@ app.use("/api/coach/plans", coachPlanRoutes);
 app.use("/api/coach/packages", sessionPackageRoutes);
 app.use("/api/coach/availability", availabilityRoutes);
 app.use("/api/sessions", sessionPurchaseRoutes);
+app.use("/api/sessions", sessionBookingRoutes);
 app.use("/api/coach", coachDashboardRoutes);
 app.use("/api/client", clientRoutes);
 app.use("/api/qualifications", qualificationRoutes);
@@ -114,6 +119,9 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/meals", mealRoutes);
 app.use("/api/nutritionist", nutritionistRoutes);
 app.use("/api/calendar", calendarRoutes);
+app.use("/api/nutritionist", nutritionistRoutes);
+
+// Static file serving
 app.use("/uploads", express.static("uploads"));
 
 module.exports = app;

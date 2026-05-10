@@ -5,7 +5,7 @@ const auth = require("../middleware/authMiddleware")
 const n = require("../controllers/nutritionistController")
 
 // Public browse
-router.get("/browse", auth, n.browse_nutritionists)
+router.get("/", auth, n.browse_nutritionists)
 router.get("/browse/:nutritionistUserId", auth, n.get_nutritionist)
 
 // Client-side relationship
@@ -20,6 +20,7 @@ router.post("/requests/:clientUserId/approve", auth, n.approve_request)
 router.post("/requests/:clientUserId/reject", auth, n.reject_request)
 router.get("/clients/:clientUserId/meal-plans", auth, n.get_client_meal_plans)
 router.post("/clients/:clientUserId/meal-plan", auth, n.assign_meal_plan)
+router.delete("/clients/:clientUserId", auth, n.drop_client);
 router.get("/meals", auth, n.get_meals)
 router.post("/meals", auth, n.create_meal)
 

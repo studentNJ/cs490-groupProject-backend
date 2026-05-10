@@ -5,39 +5,41 @@ const {
   Nutritionist,
   CoachQualification,
   CoachCertification,
-} = require("../models")
+} = require("../models");
 
 module.exports.update_client_profile = async (req, res) => {
   try {
-    const user_id = req.user.user_id
-    const { first_name, last_name, phone, goal } = req.body
+    const user_id = req.user.user_id;
+    const { first_name, last_name, phone, goal } = req.body;
 
-    const user = await User.findByPk(user_id)
+    const user = await User.findByPk(user_id);
     if (!user) {
-      return res.status(404).json({ message: "User not found" })
+      return res.status(404).json({ message: "User not found" });
     }
 
     if (user.role !== "client") {
-      return res.status(403).json({ message: "Only clients can update this profile." })
+      return res
+        .status(403)
+        .json({ message: "Only clients can update this profile." });
     }
 
     await user.update({
       first_name: first_name || user.first_name,
       last_name: last_name || user.last_name,
       phone: phone || user.phone,
-    })
+    });
 
     // update goal on client if the user is a client
-    const client = await Client.findByPk(user_id)
+    const client = await Client.findByPk(user_id);
     if (!client) {
-      return res.status(404).json({ message: "Client profile not found" })
+      return res.status(404).json({ message: "Client profile not found" });
     }
 
     if (goal !== undefined) {
-      await client.update({ goal })
+      await client.update({ goal });
     }
 
-    const refreshedClient = await Client.findByPk(user_id)
+    const refreshedClient = await Client.findByPk(user_id);
 
     res.status(200).json({
       message: "Profile updated successfully! ",
@@ -52,15 +54,15 @@ module.exports.update_client_profile = async (req, res) => {
         goal: refreshedClient.goal || null,
       },
       client: refreshedClient,
-    })
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: error.message });
   }
-}
+};
 
 module.exports.update_coach_profile = async (req, res) => {
   try {
-    const user_id = req.user.user_id
+    const user_id = req.user.user_id;
     const {
       first_name,
       last_name,
@@ -71,33 +73,33 @@ module.exports.update_coach_profile = async (req, res) => {
       specializations,
       price,
       pricing,
-    } = req.body
+    } = req.body;
 
     const nextSpecialization =
       specializations !== undefined
         ? Array.isArray(specializations)
           ? specializations.join(", ")
           : specializations
-        : specialization
+        : specialization;
 
-    const nextPrice = pricing !== undefined ? pricing : price
+    const nextPrice = pricing !== undefined ? pricing : price;
 
-    const user = await User.findByPk(user_id)
-    if (!user) return res.status(404).json({ message: "User is not found!" })
+    const user = await User.findByPk(user_id);
+    if (!user) return res.status(404).json({ message: "User is not found!" });
 
     if (user.role !== "coach") {
       return res
         .status(403)
-        .json({ message: "Only coaches can update coach profile!" })
+        .json({ message: "Only coaches can update coach profile!" });
     }
 
     await user.update({
       first_name: first_name || user.first_name,
       last_name: last_name || user.last_name,
       phone: phone || user.phone,
-    })
+    });
 
-    const coach = await Coach.findByPk(user_id)
+    const coach = await Coach.findByPk(user_id);
     if (coach) {
       await coach.update({
         bio: bio !== undefined ? bio : coach.bio,
@@ -110,7 +112,7 @@ module.exports.update_coach_profile = async (req, res) => {
             ? nextSpecialization
             : coach.specialization,
         price: nextPrice !== undefined ? nextPrice : coach.price,
-      })
+      });
     }
     res.status(200).json({
       message: "Coach profile updated successfully!",
@@ -130,15 +132,15 @@ module.exports.update_coach_profile = async (req, res) => {
         price: coach.price,
         is_approved: coach.is_approved,
       },
-    })
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: error.message });
   }
-}
+};
 
 module.exports.get_coach_profile = async (req, res) => {
   try {
-    const user_id = req.user.user_id
+    const user_id = req.user.user_id;
 
     const user = await User.findByPk(user_id, {
       attributes: [
@@ -150,18 +152,18 @@ module.exports.get_coach_profile = async (req, res) => {
         "profile_pic",
         "role",
       ],
-    })
+    });
 
-    const coach = await Coach.findByPk(user_id)
+    const coach = await Coach.findByPk(user_id);
     const qualifications = await CoachQualification.findAll({
       where: { user_id },
-    })
+    });
     const certifications = await CoachCertification.findAll({
-      where: { coach_user_id: user_id },
-    })
+      where: { coach_id: user_id },
+    });
 
     if (!user || !coach) {
-      return res.status(404).json({ message: "Coach not found" })
+      return res.status(404).json({ message: "Coach not found" });
     }
 
     res.status(200).json({
@@ -175,11 +177,11 @@ module.exports.get_coach_profile = async (req, res) => {
         qualifications,
         certifications,
       },
-    })
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: err.message });
   }
-}
+};
 
 module.exports.get_nutritionist_profile = async (req, res) => {
   try {

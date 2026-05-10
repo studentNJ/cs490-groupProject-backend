@@ -21,7 +21,10 @@ module.exports = (sequelize, DataTypes) => {
     protein: DataTypes.FLOAT,
     carbs: DataTypes.FLOAT,
     fat: DataTypes.FLOAT,
-
+    fiber: { 
+      type: DataTypes.FLOAT,
+      defaultValue: 0,
+    },
     is_premade: {
       type: DataTypes.BOOLEAN,
       defaultValue: false

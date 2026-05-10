@@ -37,6 +37,19 @@ const TEMPLATES = {
     title: "Package purchased",
     body: `${actorName} purchased ${context.package_name} (${context.session_count} sessions)`,
   }),
+  session_booked: ({ actorName, context }) => {
+    const time = new Date(context.start_time).toLocaleString([], {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    return {
+      title: "New session booked",
+      body: `${actorName} booked a session for ${time}`,
+    };
+  },
 };
 
 async function createNotification({
