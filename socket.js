@@ -3,11 +3,12 @@ const jwt = require("jsonwebtoken");
 const { Server } = require("socket.io");
 
 let io;
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
 function initSocket(server) {
   io = new Server(server, {
     cors: {
-      origin: "http://localhost:3001",
+      origin: FRONTEND_URL,
       credentials: true,
     },
   });

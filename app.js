@@ -29,6 +29,7 @@ const sessionPurchaseRoutes = require("./routes/sessionPurchaseRoutes");
 const nutritionistRoutes = require("./routes/nutritionistRoutes");
 
 const app = express();
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
 // Swagger
 let swaggerUi;
@@ -80,7 +81,7 @@ if (swaggerUi && swaggerJsdoc) {
 // --- Middleware ---
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || true,
+    origin: FRONTEND_URL,
     credentials: true,
   })
 );
