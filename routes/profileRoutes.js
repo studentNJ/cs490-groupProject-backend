@@ -10,6 +10,9 @@ router.put("/", auth, profileController.update_client_profile);
 router.get("/coach", auth, profileController.get_coach_profile);
 router.put("/coach", auth, profileController.update_coach_profile);
 
+router.get("/nutritionist", auth, profileController.get_nutritionist_profile);
+router.put("/nutritionist", auth, profileController.update_nutritionist_profile);
+
 // Profile picture (any role)
 router.put(
   "/picture",
