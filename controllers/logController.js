@@ -371,7 +371,11 @@ module.exports.meal_logs = async (req, res) => {
     });
 
     const formatted = logs.map(log => ({
+        id: log.id,
         date: log.date,
+        meal: {
+          name: log.meal?.name
+        },
         calories: log.calories_consumed,
         protein: log.meal?.protein,
         carbs: log.meal?.carbs,
