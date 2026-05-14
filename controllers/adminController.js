@@ -9,8 +9,7 @@ const {
   Exercise,
   Nutritionist,
   User,
-  CoachCertification,
-  CoachQualification
+  CoachCertification
 } = require("../models")
 
 const roleModels = {
@@ -165,7 +164,7 @@ module.exports.getAllUsers = async (req, res) => {
       attributes: userAttributes,
       include: [
       { model: Client },
-      { model: Coach, include: [{model: CoachCertification,},{model: CoachQualification,},],},
+      { model: Coach, include: [{model: CoachCertification}]},
       { model: Nutritionist },
       { model: Admin },
     ],
@@ -703,8 +702,7 @@ module.exports.getPendingApprovals = async (_req, res) => {
             where: { role: "coach" },
             attributes: userAttributes,
             include: [{ model: Coach, where: { is_approved: false },
-            include: [{model: CoachCertification,},
-              {model: CoachQualification,}
+            include: [{model: CoachCertification,}
             ] }],
           })
         : Promise.resolve([]),
@@ -823,18 +821,9 @@ module.exports.createExercise = async (req, res) => {
       { transaction },
     )
 
-    await createAuditLog({
-      actorUserId: req.user.user_id,
-      action: "exercise.create",
-      metadata: {
-        exercise_id: exercise.exercise_id,
-        name: exercise.name,
-      },
-      transaction,
-    })
 
     await transaction.commit()
-
+    res.status(201).json({ message: "Exercise created successfully.", exercise })
     res.status(201).json({
       message: "Exercise created successfully.",
       exercise,
