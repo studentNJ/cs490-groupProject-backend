@@ -20,25 +20,13 @@ module.exports = (sequalize, DataTypes) => {
         type: DataTypes.ENUM("pending", "approved", "rejected"),
         defaultValue: "pending",
       },
-      admin_comment: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-      reviewed_by: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-      reviewed_at: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
     },
     {
       tableName: "coach_certification",
       underscored: true,
       timestamps: true,
       createdAt: "created_at",
-      updatedAt: "updated_at",
+      updatedAt: false,
     }
   );
 
